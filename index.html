@@ -1519,6 +1519,44 @@
             </div>
           </div>
 
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">BUILT YEAR</label>
+              <input type="number" id="t-built" placeholder="e.g. 2018" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">FLAG REGISTRY</label>
+              <input id="t-flag" placeholder="e.g. Panama" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">GROSS TONNAGE (GT)</label>
+              <input id="t-gt" placeholder="e.g. 93000" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">SPEED/CONS. (KNOTS/MT)</label>
+              <input id="t-speed-cons" placeholder="e.g. 13.5 / 35" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">MAX ARRIVAL DRAFT (M)</label>
+              <input id="c-max-draft" placeholder="e.g. 14.5" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">TARGET DEMURRAGE ($/PDPR)</label>
+              <input id="c-demurrage" placeholder="e.g. 25000" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">LOADING TERMS</label>
+              <select id="c-terms" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+                <option value="FIOST">FIOST (Free In/Out Stowed/Trimmed)</option>
+                <option value="FIOS">FIOS (Free In/Out Stowed)</option>
+                <option value="Liner Terms">Liner Terms</option>
+              </select>
+            </div>
+          </div>
+
           <button type="submit" class="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-mono font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
             <i data-lucide="send" class="w-4 h-4"></i>
             <span>Submit Commercial Chartering Order</span>
@@ -2038,6 +2076,9 @@
         const layStart = document.getElementById('c-lay-start').value;
         const layEnd = document.getElementById('c-lay-end').value;
         const gear = document.getElementById('c-gear').value;
+        const maxDraft = document.getElementById('c-max-draft').value;
+        const demurrage = document.getElementById('c-demurrage').value;
+        const terms = document.getElementById('c-terms').value;
 
         payload = {
           ...payload,
@@ -2050,7 +2091,10 @@
           loadPort: load,
           dischargePort: dis,
           laycan: `${layStart} to ${layEnd}`,
-          gearRequirements: gear
+          gearRequirements: gear,
+          maxDraft,
+          demurrage,
+          terms
         };
 
         html = `
@@ -2061,6 +2105,7 @@
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Trade Route:</span><span class="text-slate-900">${load} &rarr; ${dis}</span></div>
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Laycan Window:</span><span class="text-slate-900">${layStart} to ${layEnd}</span></div>
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Destination Desk:</span><span class="text-emerald-700 font-bold">operations@seaiters.com</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Details:</span><span class="text-slate-900">${terms} | ${maxDraft ? `Max ${maxDraft}m` : 'No Draft Limit'} | ${demurrage ? `$${demurrage} PDPR` : 'TBA Demurrage'}</span></div>
           <div class="flex justify-between pt-1"><span class="text-slate-500">Gear Requirement:</span><span class="text-slate-900">${gear}</span></div>
         `;
       } else {
@@ -2074,6 +2119,10 @@
         const dwt = document.getElementById('t-dwt').value;
         const port = document.getElementById('t-open-port').value;
         const basis = document.getElementById('t-basis').value;
+        const built = document.getElementById('t-built').value;
+        const flag = document.getElementById('t-flag').value;
+        const gt = document.getElementById('t-gt').value;
+        const speedCons = document.getElementById('t-speed-cons').value;
 
         payload = {
           ...payload,
@@ -2086,7 +2135,11 @@
           vesselClass: vclass,
           summerDwt: dwt,
           openPort: port,
-          dealBasis: basis
+          dealBasis: basis,
+          built,
+          flag,
+          gt,
+          speedCons
         };
 
         html = `
@@ -2095,7 +2148,8 @@
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Shipowner Entity:</span><span class="text-slate-900 font-semibold">${principal}</span></div>
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Commercial Officer:</span><span class="text-slate-900">${officer} (${email})</span></div>
           <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Vessel & Class:</span><span class="text-slate-900 font-bold text-blue-700">${vname} (${vclass} - IMO: ${imo})</span></div>
-          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Deadweight Summer:</span><span class="text-slate-900">${dwt}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Specs:</span><span class="text-slate-900">${dwt} | ${built ? `Built ${built}` : 'Built N/A'} | ${flag || 'Flag N/A'}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Speed/Cons:</span><span class="text-slate-900">${speedCons || 'N/A'}</span></div>
           <div class="flex justify-between pt-1"><span class="text-slate-500">Position & Terms:</span><span class="text-slate-900 font-semibold">${port} (${basis})</span></div>
         `;
       }
@@ -2157,10 +2211,6 @@
 
         statusBanner.className = "mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-mono flex items-center justify-between";
         statusText.innerText = `CONFIRMED • QUEUED FOR operations@seaiters.com (OFFLINE READY)`;
-      }
-
-        statusBanner.className = "mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-mono flex items-center justify-between";
-        statusText.innerText = `CONFIRMED • QUEUED IN SECURE CLIENT CACHE (OFFLINE READY)`;
       }
     }
 
@@ -2528,10 +2578,9 @@
         scrollWheelZoom: true
       });
 
-      // CartoDB Positron clean map tiles
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &bull; &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+      // Esri World Imagery Satellite Tiles (Google Earth style)
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         maxZoom: 19
       }).addTo(aisMap);
 
@@ -2808,16 +2857,38 @@
           roughness: 0.18,
           metalness: 0.08,
           transparent: true,
-          opacity: 0.72
+          opacity: 0.72,
+          wireframe: false
         })
       };
 
       // Ocean Plane & Bathymetric Grid
-      const waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(320, 320, 32, 32), mats.water);
+      const waterGeo = new THREE.PlaneGeometry(320, 320, 64, 64);
+      const waterMesh = new THREE.Mesh(waterGeo, mats.water);
       waterMesh.rotation.x = -Math.PI / 2;
       waterMesh.position.y = 0;
       waterMesh.receiveShadow = true;
       scene.add(waterMesh);
+
+      // Store original vertices for wave calculation
+      const waterVertices = [];
+      const posAttribute = waterGeo.attributes.position;
+      for (let i = 0; i < posAttribute.count; i++) {
+        waterVertices.push({
+          x: posAttribute.getX(i),
+          y: posAttribute.getY(i),
+          z: posAttribute.getZ(i)
+        });
+      }
+
+      // Physics Helper: Calculate wave height at a specific x, z world coordinate
+      function getWaveHeight(x, z, time) {
+        // Complex Gerstner-like wave combining multiple sine waves
+        const wave1 = Math.sin(x * 0.15 + time * 1.5) * Math.cos(z * 0.15 + time * 1.2) * 0.4;
+        const wave2 = Math.sin(x * 0.05 - time * 0.8) * Math.cos(z * 0.08 + time * 1.0) * 0.6;
+        const wave3 = Math.sin(x * 0.3 + time * 2.0) * 0.15;
+        return wave1 + wave2 + wave3;
+      }
 
       const grid = new THREE.GridHelper(260, 52, 0xcbd5e1, 0xe2e8f0);
       grid.position.y = 0.02;
@@ -3544,18 +3615,61 @@
 
         clock += 0.016;
 
+        // --- Animate Ocean Waves ---
+        const posAttribute = waterGeo.attributes.position;
+        for (let i = 0; i < posAttribute.count; i++) {
+          const v = waterVertices[i];
+          // water geometry is rotated -90 on X, so its local X and Y map to world X and Z
+          const waveZ = getWaveHeight(v.x, -v.y, clock);
+          posAttribute.setZ(i, waveZ);
+        }
+        posAttribute.needsUpdate = true;
+        waterGeo.computeVertexNormals();
+
+        // Helper function for physics-based ship buoyancy
+        function applyBuoyancy(ship, shipLength, shipWidth) {
+          const x = ship.position.x;
+          const z = ship.position.z;
+          const angle = ship.rotation.y;
+
+          // Sample wave height at center, bow, and port/starboard to calculate pitch and roll
+          const centerHeight = getWaveHeight(x, z, clock);
+
+          const bowX = x + Math.cos(angle) * (shipLength / 2);
+          const bowZ = z - Math.sin(angle) * (shipLength / 2);
+          const bowHeight = getWaveHeight(bowX, bowZ, clock);
+
+          const sternX = x - Math.cos(angle) * (shipLength / 2);
+          const sternZ = z + Math.sin(angle) * (shipLength / 2);
+          const sternHeight = getWaveHeight(sternX, sternZ, clock);
+
+          const portX = x + Math.cos(angle - Math.PI/2) * (shipWidth / 2);
+          const portZ = z - Math.sin(angle - Math.PI/2) * (shipWidth / 2);
+          const portHeight = getWaveHeight(portX, portZ, clock);
+
+          const stbdX = x + Math.cos(angle + Math.PI/2) * (shipWidth / 2);
+          const stbdZ = z - Math.sin(angle + Math.PI/2) * (shipWidth / 2);
+          const stbdHeight = getWaveHeight(stbdX, stbdZ, clock);
+
+          // Apply buoyancy and physics rotations
+          ship.position.y = centerHeight;
+          ship.rotation.z = Math.asin((portHeight - stbdHeight) / shipWidth); // Roll
+          ship.rotation.x = Math.asin((sternHeight - bowHeight) / shipLength); // Pitch
+        }
+
         // 1. Container Ship Cruising Lane
         const t1 = clock * 0.18;
         containerShip.position.x = 22 + Math.sin(t1) * 28;
         containerShip.position.z = -8 + Math.cos(t1 * 0.7) * 12;
         containerShip.rotation.y = -Math.PI / 2 + Math.cos(t1) * 0.25;
 
-        // Hydrodynamic Micro-Bobbing & Swell
-        containerShip.position.y = Math.sin(clock * 1.6) * 0.08;
-        containerShip.rotation.z = Math.cos(clock * 1.2) * 0.025; // roll
-        containerShip.rotation.x = Math.sin(clock * 1.5) * 0.015; // pitch
+        // Apply dynamic wave buoyancy
+        applyBuoyancy(containerShip, 20, 4.2);
+
         if (containerShip.radar) containerShip.radar.rotation.y += 0.04;
         if (containerShip.wake) {
+          // Adjust wake position relative to ship y to stay on water
+          containerShip.wake.position.y = 0.02 - containerShip.position.y;
           containerShip.wake.scale.x = 1.0 + Math.sin(clock * 3.0) * 0.08;
           containerShip.wake.scale.z = 1.0 + Math.cos(clock * 2.5) * 0.06;
         }
@@ -3565,10 +3679,12 @@
         bulkCarrier.position.x = -15 + Math.cos(t2) * 26;
         bulkCarrier.position.z = 18 + Math.sin(t2 * 0.6) * 10;
         bulkCarrier.rotation.y = Math.PI / 2 - Math.sin(t2) * 0.22;
-        bulkCarrier.position.y = Math.sin(clock * 1.4 + 1.0) * 0.07;
-        bulkCarrier.rotation.z = Math.cos(clock * 1.1 + 0.5) * 0.02;
+
+        applyBuoyancy(bulkCarrier, 24, 4.8);
+
         if (bulkCarrier.radar) bulkCarrier.radar.rotation.y += 0.045;
         if (bulkCarrier.wake) {
+          bulkCarrier.wake.position.y = 0.02 - bulkCarrier.position.y;
           bulkCarrier.wake.scale.x = 1.0 + Math.sin(clock * 2.8 + 1.0) * 0.07;
           bulkCarrier.wake.scale.z = 1.0 + Math.cos(clock * 2.2) * 0.05;
         }
@@ -3578,9 +3694,12 @@
         lngCarrier.position.x = -8 + Math.sin(t3) * 25;
         lngCarrier.position.z = -22 + Math.cos(t3 * 0.5) * 14;
         lngCarrier.rotation.y = -Math.PI / 2.2 + Math.cos(t3) * 0.2;
-        lngCarrier.position.y = Math.sin(clock * 1.5 + 2.0) * 0.07;
+
+        applyBuoyancy(lngCarrier, 22, 4.5);
+
         if (lngCarrier.radar) lngCarrier.radar.rotation.y += 0.038;
         if (lngCarrier.wake) {
+          lngCarrier.wake.position.y = 0.02 - lngCarrier.position.y;
           lngCarrier.wake.scale.x = 1.0 + Math.sin(clock * 2.5 + 2.0) * 0.08;
         }
 
@@ -3588,8 +3707,11 @@
         tugboat.position.x = containerShip.position.x + Math.sin(clock * 0.4) * 5 + 6;
         tugboat.position.z = containerShip.position.z + Math.cos(clock * 0.4) * 4 + 4;
         tugboat.rotation.y = containerShip.rotation.y + 0.2;
-        tugboat.position.y = Math.sin(clock * 2.2) * 0.09;
+
+        applyBuoyancy(tugboat, 6.5, 3.0);
+
         if (tugboat.wake) {
+          tugboat.wake.position.y = 0.02 - tugboat.position.y;
           tugboat.wake.scale.x = 1.0 + Math.sin(clock * 4.0) * 0.12;
         }
 
@@ -3598,10 +3720,12 @@
         vlccSupertanker.position.x = 8 + Math.cos(t4) * 32;
         vlccSupertanker.position.z = -32 + Math.sin(t4 * 0.8) * 12;
         vlccSupertanker.rotation.y = Math.PI / 2.1 - Math.sin(t4) * 0.2;
-        vlccSupertanker.position.y = Math.sin(clock * 1.3) * 0.06;
-        vlccSupertanker.rotation.z = Math.cos(clock * 0.9) * 0.016;
+
+        applyBuoyancy(vlccSupertanker, 28, 5.2);
+
         if (vlccSupertanker.radar) vlccSupertanker.radar.rotation.y += 0.04;
         if (vlccSupertanker.wake) {
+          vlccSupertanker.wake.position.y = 0.02 - vlccSupertanker.position.y;
           vlccSupertanker.wake.scale.x = 1.0 + Math.sin(clock * 2.6) * 0.07;
         }
 
@@ -3609,8 +3733,11 @@
         pilotBoat.position.x = containerShip.position.x - 7 + Math.sin(clock * 0.8) * 2;
         pilotBoat.position.z = containerShip.position.z + 5 + Math.cos(clock * 0.8) * 2;
         pilotBoat.rotation.y = containerShip.rotation.y - 0.12;
-        pilotBoat.position.y = Math.sin(clock * 3.4) * 0.11;
+
+        applyBuoyancy(pilotBoat, 8.5, 3.0);
+
         if (pilotBoat.wake) {
+          pilotBoat.wake.position.y = 0.02 - pilotBoat.position.y;
           pilotBoat.wake.scale.x = 1.0 + Math.sin(clock * 5.0) * 0.15;
         }
 
@@ -3619,9 +3746,10 @@
           lighthouse.beamArm.rotation.y += 0.022;
         }
 
-        // 8. Buoys Bobbing & Beacon Cadence
-        buoy1.position.y = Math.sin(clock * 2.0) * 0.06;
-        buoy2.position.y = Math.sin(clock * 1.9 + 1.5) * 0.06;
+        // 8. Buoys Bobbing & Beacon Cadence (Buoyancy)
+        buoy1.position.y = getWaveHeight(buoy1.position.x, buoy1.position.z, clock);
+        buoy2.position.y = getWaveHeight(buoy2.position.x, buoy2.position.z, clock);
+
         const pulse1 = (Math.sin(clock * 4.0) > 0.3) ? 1.5 : 0.2;
         const pulse2 = (Math.sin(clock * 4.0 + 2.0) > 0.3) ? 1.5 : 0.2;
         if (buoy1.pointLight) buoy1.pointLight.intensity = pulse1;
