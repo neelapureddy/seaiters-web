@@ -1,0 +1,57 @@
+[
+  {
+    "reference": "SIT-CHTR-2026-5114",
+    "receivedAt": "2026-10-22T10:33:23.982Z",
+    "forwardedTo": "operations@seaiters.com",
+    "status": "TRANSMITTED_TO_OPERATIONS",
+    "orderType": "Cargo Charter",
+    "principal": "Glencore Energy UK",
+    "officer": "Marcus Sterling",
+    "email": "m.sterling@glencore.com",
+    "commodity": "Iron Ore Fines",
+    "volume": "175,000 MT",
+    "loadPort": "Tubarao",
+    "dischargePort": "Qingdao"
+  },
+  {
+    "reference": "SIT-CHTR-2026-6722",
+    "receivedAt": "2026-10-22T10:31:55.219Z",
+    "status": "TRANSMITTED_TO_DESK",
+    "orderType": "Cargo Charter",
+    "principal": "Glencore Energy UK",
+    "officer": "Marcus Sterling",
+    "email": "m.sterling@glencore.com",
+    "commodity": "Iron Ore Fines",
+    "volume": "175,000 MT",
+    "loadPort": "Tubarao",
+    "dischargePort": "Qingdao"
+  },
+  {
+    "reference": "SIT-TON-2026-3596",
+    "receivedAt": "2026-10-22T10:09:47.758Z",
+    "status": "TRANSMITTED_TO_DESK",
+    "orderType": "Tonnage Offer",
+    "timestamp": "2026-10-22T10:09:47.712Z",
+    "principal": "Pacific Maritime Holding",
+    "officer": "Marcus Thorne",
+    "email": "fixtures@pacificmarine.com",
+    "phone": "+30 210 428 9000",
+    "vesselName": "MV PACIFIC HORIZON",
+    "imoNumber": "9784321",
+    "vesselClass": "Capesize (180k DWT)",
+    "summerDwt": "181,200 DWT",
+    "openPort": "Singapore Anchorage",
+    "dealBasis": "Spot Voyage"
+  },
+  {
+    "reference": "SIT-CHTR-2026-2211",
+    "receivedAt": "2026-10-22T10:03:03.680Z",
+    "status": "TRANSMITTED_TO_DESK",
+    "orderType": "Cargo Charter",
+    "principal": "Vitol Energy Trading",
+    "officer": "Alexander Sterling",
+    "email": "asterling@vitol.com",
+    "commodity": "Crude Oil",
+    "volume": "2,000,000 bbl"
+  }
+]

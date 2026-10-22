@@ -1,0 +1,3658 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seaiters | Commercial Maritime Fleet Services — Chartering, Ship Broking & Global Network</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js CDN for 3D Miniature Maritime Scale Models -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Leaflet.js for Live AIS Global Ship Tracking -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            marine: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+              600: '#475569',
+              100: '#f1f5f9',
+              50: '#f8fafc',
+            },
+            navy: {
+              900: '#0a192f',
+              800: '#112240',
+              700: '#1d3557',
+              600: '#2563eb',
+            }
+          },
+          fontFamily: {
+            serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'Courier New', 'monospace'],
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #ffffff;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .bg-light-grid {
+      background-image: 
+        linear-gradient(to right, rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .clean-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .clean-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px 0 rgba(15, 23, 42, 0.06);
+    }
+
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-ticker {
+      display: flex;
+      width: max-content;
+      animation: ticker 42s linear infinite;
+    }
+    .animate-ticker:hover {
+      animation-play-state: paused;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* 3D Maritime Scale Models Background */
+    #maritime-3d-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* AIS Radar & Leaflet Map Custom Styling */
+    .ais-ship-icon {
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.3));
+    }
+    .ais-pulse-ring {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      top: -6px;
+      left: -6px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: pulseAis 2.2s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+    }
+    @keyframes pulseAis {
+      0% { transform: scale(0.5); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .radar-sweep-cone {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(37, 99, 235, 0.03) 270deg, rgba(37, 99, 235, 0.22) 360deg);
+      animation: radarRotate 6s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes radarRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .leaflet-container {
+      font-family: inherit;
+      background: #f8fafc;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
+      padding: 0;
+      overflow: hidden;
+    }
+    .leaflet-popup-content {
+      margin: 12px 14px;
+      line-height: 1.4;
+    }
+    .leaflet-popup-tip {
+      background: #ffffff !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50/40 text-slate-900 flex flex-col min-h-screen relative selection:bg-slate-900 selection:text-white">
+
+  <!-- ==================== 3D MINIATURE MARITIME FLEET BACKGROUND ==================== -->
+  <div id="maritime-3d-container" aria-hidden="true">
+    <canvas id="maritime-3d-canvas" class="w-full h-full block"></canvas>
+  </div>
+
+  
+
+  <!-- ==================== MARKET BENCHMARK & CLOCK BAR ==================== -->
+  <div class="relative z-30 w-full bg-[#f8fafc]/95 backdrop-blur-md border-b border-slate-200 text-xs font-mono text-slate-600">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch">
+      <div class="flex items-center gap-3 px-4 py-2 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-100/70 shrink-0">
+        <div class="flex items-center gap-2 text-slate-900 font-semibold tracking-wider">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>DESK STATUS: OPEN</span>
+        </div>
+        <span class="text-slate-300 hidden sm:inline">|</span>
+        <div class="flex items-center gap-3 text-[11px] text-slate-500">
+          <span>LDN <strong id="clock-ldn" class="text-slate-800">--:--:--</strong></span>
+          <span>SIN <strong id="clock-sin" class="text-slate-800">--:--:--</strong></span>
+          <span>DXB <strong id="clock-dxb" class="text-slate-800">--:--:--</strong></span>
+          <span>HOU <strong id="clock-hou" class="text-slate-800">--:--:--</strong></span>
+        </div>
+        <span class="text-slate-300 hidden xl:inline">|</span>
+        <a href="tel:+919381477267" class="hidden xl:flex items-center gap-1.5 text-slate-800 hover:text-blue-600 font-semibold text-[11px] transition-colors">
+          <i data-lucide="phone" class="w-3 h-3 text-blue-600"></i>
+          <span>Primary Contact: +91 9381477267</span>
+        </a>
+      </div>
+
+      <div class="relative flex-1 overflow-hidden py-2 bg-[#f8fafc] flex items-center">
+        <div class="animate-ticker flex items-center gap-8 whitespace-nowrap text-xs">
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">BDI</span>
+            <span class="text-slate-600">Baltic Dry Index:</span>
+            <span class="text-slate-900 font-bold">1,948 pts</span>
+            <span class="text-emerald-600 font-medium">+1.78%</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">CAPESIZE 5TC</span>
+            <span class="text-slate-600">Average:</span>
+            <span class="text-slate-900 font-bold">$25,120/day</span>
+            <span class="text-emerald-600 font-medium">+$780</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">PANAMAX 4TC</span>
+            <span class="text-slate-600">Average:</span>
+            <span class="text-slate-900 font-bold">$16,580/day</span>
+            <span class="text-emerald-600 font-medium">+$240</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">VLCC TD3C</span>
+            <span class="text-slate-600">MEG&rarr;China:</span>
+            <span class="text-slate-900 font-bold">WS 146.5 ($71,400 TCE)</span>
+            <span class="text-emerald-600 font-medium">+WS 4.2</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">LNG BLNG1g</span>
+            <span class="text-slate-600">USG&rarr;Europe:</span>
+            <span class="text-slate-900 font-bold">$64,500/day</span>
+            <span class="text-emerald-600 font-medium">+2.38%</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">VLSFO</span>
+            <span class="text-slate-600">Singapore Hub:</span>
+            <span class="text-slate-900 font-bold">$612.00/MT</span>
+            <span class="text-rose-600 font-medium">-0.73%</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">BDI</span>
+            <span class="text-slate-600">Baltic Dry Index:</span>
+            <span class="text-slate-900 font-bold">1,948 pts</span>
+            <span class="text-emerald-600 font-medium">+1.78%</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-[10px]">CAPESIZE 5TC</span>
+            <span class="text-slate-600">Average:</span>
+            <span class="text-slate-900 font-bold">$25,120/day</span>
+            <span class="text-emerald-600 font-medium">+$780</span>
+            <span class="text-slate-300 ml-3">/</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN NAVIGATION BAR ==================== -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <a href="#" class="flex items-center gap-3 group">
+          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-900 text-white font-serif font-black text-lg">
+            S
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-serif tracking-widest text-xl font-bold text-slate-900">
+                SEAITERS
+              </span>
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                EST. BROKING
+              </span>
+            </div>
+            <p class="text-[9px] uppercase tracking-[0.25em] text-slate-500 font-mono">
+              Commercial Maritime Services
+            </p>
+          </div>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-7 text-xs font-mono uppercase tracking-wider text-slate-600">
+          <a href="#chartering" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900">
+            01. Chartering
+          </a>
+          <a href="#shipbroking" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900">
+            02. Ship Broking
+          </a>
+          <a href="#network" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900">
+            03. Global Network
+          </a>
+          <a href="#fleet" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900">
+            Fleet Specs
+          </a>
+          <a href="#calculator" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900">
+            Voyage Estimator
+          </a>
+          <a href="#ais-tracker" class="hover:text-blue-700 transition-colors py-1 border-b-2 border-transparent hover:border-blue-700 text-blue-600 font-bold flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+            04. Live AIS
+          </a>
+          <button onclick="toggleFleetControlsModal()" class="hover:text-slate-900 transition-colors py-1 border-b-2 border-transparent hover:border-slate-900 text-slate-600 flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="box" class="w-3.5 h-3.5 text-slate-500"></i>
+            3D Fleet
+          </button>
+        </nav>
+
+        <div class="flex items-center gap-2.5 font-mono text-xs">
+          <a href="tel:+919381477267" class="flex items-center gap-2 text-slate-900 font-semibold hover:text-blue-600 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-all shadow-sm">
+            <i data-lucide="phone-call" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>+91 9381477267</span>
+          </a>
+
+          <a href="https://wa.me/919381477267" target="_blank" rel="noopener" class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-medium transition-all">
+            <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>WhatsApp</span>
+          </a>
+
+          <a href="#inquiry" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+            <span>Commercial Inquiry</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== HERO SECTION (MINIMALIST WHITE) ==================== -->
+  <section class="relative z-10 bg-gradient-to-r from-white via-white/80 to-white/20 lg:to-transparent border-b border-slate-200 py-16 lg:py-24 bg-light-grid">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7 max-w-3xl">
+          
+          <!-- Institutional Tag -->
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-slate-100/90 border border-slate-200 text-xs font-mono text-slate-700 mb-6 backdrop-blur-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-900"></span>
+            <span class="tracking-wide">GLOBAL TONNAGE &amp; ASSET BROKERAGE</span>
+            <span class="text-slate-300">•</span>
+            <span>BIMCO CORPORATE STANDARDS</span>
+          </div>
+
+          <!-- Headline -->
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-slate-900 tracking-tight leading-[1.12]">
+            Connecting Global Tonnage with International Trade.
+          </h1>
+
+          <!-- Subheading -->
+          <p class="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl font-normal">
+            Seaiters is an international maritime commercial brokerage firm executing high-stakes vessel chartering,
+            Sale &amp; Purchase (S&amp;P) asset broking, and synchronized port agency operations across dry bulk, liquid energy,
+            and specialized cargo fleets.
+          </p>
+
+          <!-- Action CTAs -->
+          <div class="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 font-mono text-xs">
+            <a href="#inquiry" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm">
+              <i data-lucide="anchor" class="w-4 h-4"></i>
+              <span>Charter a Vessel / Offer Tonnage</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>
+            </a>
+
+            <a href="#ais-tracker" class="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-lg font-bold uppercase tracking-wider text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all shadow-sm">
+              <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+              <span>Live Global AIS Map</span>
+            </a>
+
+            <a href="#calculator" class="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-lg font-semibold text-slate-700 bg-white/90 border border-slate-300 hover:bg-slate-50 transition-all backdrop-blur-sm">
+              <i data-lucide="calculator" class="w-4 h-4 text-slate-500"></i>
+              <span>Voyage Estimator</span>
+            </a>
+          </div>
+
+          <!-- Trust Credentials -->
+          <div class="mt-10 pt-6 border-t border-slate-200 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono text-slate-500">
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-4 h-4 text-slate-700"></i>
+              <span>OFAC / UK / EU Sanctions Screened</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-4 h-4 text-slate-700"></i>
+              <span>&lt; 60 Min Commercial SLA</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="check-circle" class="w-4 h-4 text-slate-700"></i>
+              <span>BIMCO Standard Charter Parties</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Flank: Live 3D Fleet Radar & AIS Telemetry HUD (Pure Ambient Telemetry) -->
+        <div class="hidden lg:flex lg:col-span-5 flex-col items-end justify-center select-none">
+          <div class="clean-card bg-white/90 backdrop-blur-md p-5 rounded-2xl border border-slate-200 shadow-md max-w-sm w-full text-slate-800 font-mono text-xs">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-3">
+              <div class="flex items-center gap-2 font-bold text-slate-900 text-xs">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>3D MARITIME RADAR FEED</span>
+              </div>
+              <span class="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">LIVE AIS</span>
+            </div>
+
+            <div class="space-y-2 text-[11px] text-slate-600 mb-4">
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500">Convoy Flagship:</span>
+                <span class="font-bold text-slate-900">Seaiters Horizon (Ultra Container)</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500">Secondary Tonnage:</span>
+                <span class="font-bold text-slate-900">Seaiters Titan (Capesize 208k)</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500">Clean Energy Tonnage:</span>
+                <span class="font-bold text-slate-900">Arctic Gas (174k CBM ME-GA)</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500">Channel Nav Beacons:</span>
+                <span class="text-emerald-600 font-semibold flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active (Fl. 2s)
+                </span>
+              </div>
+              <div class="flex justify-between items-center pt-0.5">
+                <span class="text-slate-500">Scale Rendering:</span>
+                <span class="text-slate-800 font-medium">Miniature 3D Background Models</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex flex-col gap-2 text-[10px]">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Telemetry Status:</span>
+                <span class="text-emerald-700 font-semibold flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Autonomous Cruising (7 Ships)</span>
+                </span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                <button onclick="toggleFleetControlsModal()" class="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 cursor-pointer">
+                  <i data-lucide="eye" class="w-3 h-3"></i> 3D Model Focus &amp; Inspector &rarr;
+                </button>
+                <a href="#ais-tracker" class="text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1">
+                  <span>AIS Map &rarr;</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VERIFIED METRICS BAR ==================== -->
+  <section class="relative z-10 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 font-mono">
+        
+        <div class="border-l-2 border-slate-300 pl-4">
+          <div class="text-2xl sm:text-3xl font-serif font-bold text-slate-900">48.5M+</div>
+          <div class="text-xs font-semibold text-slate-700 uppercase mt-0.5">Metric Tons Moved</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Annual dry, tanker &amp; gas volume</p>
+        </div>
+
+        <div class="border-l-2 border-slate-300 pl-4">
+          <div class="text-2xl sm:text-3xl font-serif font-bold text-slate-900">1,240+</div>
+          <div class="text-xs font-semibold text-slate-700 uppercase mt-0.5">Commercial Fixtures</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Spot, COA &amp; Time Charters executed</p>
+        </div>
+
+        <div class="border-l-2 border-slate-300 pl-4">
+          <div class="text-2xl sm:text-3xl font-serif font-bold text-slate-900">180+</div>
+          <div class="text-xs font-semibold text-slate-700 uppercase mt-0.5">Direct Owner Relationships</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">Vetted global shipowning entities</p>
+        </div>
+
+        <div class="border-l-2 border-slate-300 pl-4">
+          <div class="text-2xl sm:text-3xl font-serif font-bold text-slate-900">&lt; 60m</div>
+          <div class="text-xs font-semibold text-slate-700 uppercase mt-0.5">Quote Turnaround</div>
+          <p class="text-[11px] text-slate-500 mt-0.5">SLA-backed freight indications</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== THE 3 PRIMARY SERVICES ==================== -->
+  
+  <!-- 01. CHARTERING -->
+  <section id="chartering" class="relative z-10 py-16 sm:py-20 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div class="max-w-2xl">
+          <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+            Primary Service 01
+          </span>
+          <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+            Vessel Chartering Services
+          </h2>
+          <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+            Direct commercial fixture execution across spot voyages, Contracts of Affreightment (COA), and long-term time charters with speed/consumption warranties.
+          </p>
+        </div>
+
+        <div class="font-mono text-xs text-slate-500">
+          <span class="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
+            PRO-FORMAS: GENCON 2022 // NYPE 2015 // BPVoy5
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="ship" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Voyage &amp; Spot Fixtures</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Freight Hedging &amp; Arbitrage</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Rapid commercial matchmaking connecting international commodity houses and energy majors with modern ballast tonnage matching exact laycan windows.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Spot single-voyage fixtures</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Consecutive voyages &amp; COA volumes</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Freight Derivatives (FFA) advisory</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Dry Bulk Voyage')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Initiate Voyage Inquiry</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Time Charters &amp; Period Leases</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Guaranteed Performance Terms</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Structuring 6-month to 5-year period time charters and bareboat leases under standard NYPE and BALTIME pro-formas with strict off-hire and speed guarantees.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Period time charters with index-linked options</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Bareboat charter with purchase obligations</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Fuel consumption warranties &amp; auditing</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Period Time Charter')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Initiate Time Charter</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="calculator" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Laytime &amp; Demurrage Desk</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Post-Fixture Commercial Settlement</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Dedicated post-fixture operational management resolving Statement of Facts (SOF), reversible laytime terms, Notice of Readiness audits, and demurrage calculations.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> SOF audit &amp; weather exclusion analysis</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Fast laytime reconciliation &amp; settlement</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Demurrage claim dispute resolution</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#calculator" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Open Laytime Estimator</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 02. SHIP BROKING & S&P -->
+  <section id="shipbroking" class="relative z-10 py-16 sm:py-20 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div class="max-w-2xl">
+          <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+            Primary Service 02
+          </span>
+          <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+            Ship Broking &amp; S&amp;P Services
+          </h2>
+          <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+            Institutional vessel acquisition and disposal brokerage, shipyard newbuilding contracting, and certified desktop asset valuations.
+          </p>
+        </div>
+
+        <div class="font-mono text-xs text-slate-500">
+          <span class="px-2.5 py-1 rounded bg-white border border-slate-200">
+            CONTRACTS: SALEFORM 2012 // SHIPSALE 22 // RECYCLECON
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="scale" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Secondhand Tonnage S&amp;P</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Acquisition &amp; Disposal Mandates</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Commercial guidance throughout inspection, MOA negotiation, escrow closing, flag transfer, and vessel physical delivery across dry bulk, tankers, and feeder fleets.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Memorandum of Agreement (MOA) drafting</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Pre-purchase inspection coordination</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Multi-currency escrow account management</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillTonnageForm('Secondhand S&P')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Submit S&amp;P Mandate</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="hammer" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Shipyard Newbuilding Contracting</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Asian &amp; European Yard Access</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Securing tier-one building berths across Japanese, Korean, and Chinese shipyards for dual-fuel methanol, ammonia-ready, and LNG carrier specifications.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Yard berth slot negotiation &amp; price benchmarking</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Shipbuilding Contract (SAJ/NEWBUILDCON) pro-formas</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Refund Guarantee (RG) banking validation</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillTonnageForm('Newbuilding Slot Inquiry')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Explore Yard Slots</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="file-check-2" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Asset Valuations &amp; Vetting</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Certified Financial Appraisals</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Independent vessel valuation certificates for shipowners, commercial lenders, and maritime courts grounded in verified fixture earnings and current scrap indices.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Desktop appraisals &amp; certified bank valuations</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Class record audit (DNV, ABS, Lloyd's Register)</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Green recycling (HK Convention compliant)</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillTonnageForm('Valuation Request')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Request Valuation Certificate</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 03. INTERNATIONAL NETWORKING & PORT AGENCY -->
+  <section id="network" class="py-16 sm:py-20 bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div class="max-w-2xl">
+          <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+            Primary Service 03
+          </span>
+          <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+            International Network &amp; Operations
+          </h2>
+          <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+            Coordinated 24/7 port representation across 320+ strategic commercial hubs, bunker procurement, and canal passage dispatch.
+          </p>
+        </div>
+
+        <div class="font-mono text-xs text-slate-500">
+          <span class="px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
+            FONASBA QUALITY STANDARD VERIFIED
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="globe" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">24/7 Port Agency Network</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">320+ Commercial Deepwater Hubs</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Turnaround coordination, pilotage arrangement, and protective agency representation across primary discharge and loading ports globally.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Pro-Forma Disbursement Accounts (PDA) in 24h</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Berthing window and cargo handling liaison</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Customs, immigration, and crew logistics</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#hub-telemetry" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>View Port Telemetry</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="fuel" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Bunker Spot Procurement</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">VLSFO, LSMGO &amp; Alternative Fuels</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Bunkering brokerage with guaranteed ISO 8217 quality verification, competitive spreads, and mass flow meter monitoring at Singapore, Rotterdam, Fujairah, and Houston.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Spot and forward bunker hedging contracts</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Mass Flow Meter (MFM) dispute protection</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Bio-B30, LNG, and Methanol bunkering access</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Bunker Procurement')" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Request Bunker Indication</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="clean-card p-6 sm:p-7 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 mb-5">
+              <i data-lucide="navigation" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-slate-900 mb-1">Canal &amp; Chokepoint Transit</h3>
+            <p class="text-xs font-mono text-slate-500 uppercase mb-3">Suez, Panama &amp; Strategic Straits</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+              Convoy booking, auction slot bidding, and maximum draft optimization for seamless passage through the Suez Canal, Panama Canal, and security-heightened straits.
+            </p>
+            <ul class="space-y-2 text-xs font-mono text-slate-600 border-t border-slate-100 pt-4">
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Suez Canal convoy slot reservation &amp; toll rebates</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> Panama Neopanamax draft &amp; auction management</li>
+              <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-800"></i> High-risk area armed security &amp; escort coordination</li>
+            </ul>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 font-mono text-xs">
+            <a href="#hub-telemetry" class="text-slate-900 font-bold hover:underline flex items-center gap-1.5">
+              <span>Check Transit Delays</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VOYAGE & LAYTIME ESTIMATOR (INTERACTIVE) ==================== -->
+  <section id="calculator" class="relative z-10 py-16 sm:py-20 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-12">
+        <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+          Interactive Operational Tool
+        </span>
+        <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+          Voyage &amp; Laytime Estimator
+        </h2>
+        <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+          Simulate sea transit days, bunker fuel burn, gross freight values, and environmental carbon indicators across benchmark trade corridors.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <div class="lg:col-span-5 bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-serif font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-slate-700"></i>
+            <span>Voyage Parameters</span>
+          </h3>
+
+          <div class="space-y-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 mb-1">VESSEL CLASS:</label>
+              <select id="sim-vessel" onchange="runSimulation()" class="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 font-medium focus:border-slate-900 focus:outline-none">
+                <option value="capesize" selected>Capesize Bulker (180,000 DWT)</option>
+                <option value="panamax">Kamsarmax / Panamax (82,000 DWT)</option>
+                <option value="ultramax">Ultramax Bulker (64,000 DWT)</option>
+                <option value="vlcc">VLCC Tanker (300,000 DWT)</option>
+                <option value="lng">LNG Carrier (174,000 cbm)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-700 mb-1">BENCHMARK CORRIDOR:</label>
+              <select id="sim-route" onchange="runSimulation()" class="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 font-medium focus:border-slate-900 focus:outline-none">
+                <option value="tub-qin" selected>Tubarao (Brazil) &rarr; Qingdao (China) [11,200 nm]</option>
+                <option value="hed-qin">Port Hedland (Aus) &rarr; Qingdao [3,650 nm]</option>
+                <option value="usg-ara">US Gulf &rarr; Rotterdam (ARA) [4,850 nm]</option>
+                <option value="meg-chi">Ras Tanura (MEG) &rarr; Ningbo [5,400 nm]</option>
+                <option value="sab-zee">Sabine Pass &rarr; Zeebrugge (LNG) [4,950 nm]</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-700 mb-1">CARGO VOLUME (MT):</label>
+              <input type="number" id="sim-cargo" value="175000" oninput="runSimulation()" class="w-full p-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:border-slate-900 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-slate-700 mb-1">
+                VESSEL SPEED: <strong id="speed-val" class="text-slate-900">13.5 kn</strong>
+              </label>
+              <input type="range" id="sim-speed" min="11" max="16" step="0.5" value="13.5" oninput="updateSpeedVal(this.value)" class="w-full accent-slate-900 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-6 font-mono text-xs">
+            <span class="font-bold text-slate-800 uppercase flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-slate-900"></span>
+              ESTIMATED VOYAGE TELEMETRY
+            </span>
+            <span class="text-slate-400">ENGINE: SIT-CALC-V4</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono mb-6">
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">TRANSIT TIME:</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-transit">34.6 Days</span>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">BUNKER BURN (VLSFO):</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-fuel">1,210 MT</span>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">IMO CII RATING:</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-cii">Grade B</span>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">INDICATIVE FREIGHT:</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-rate">$24.80 / MT</span>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">GROSS FREIGHT:</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-total">$4,340,000</span>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span class="text-[10px] text-slate-500 block mb-0.5">DEMURRAGE RISK:</span>
+              <span class="text-2xl font-bold text-slate-900" id="out-demurrage">&lt; 4% Low</span>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
+            <span class="text-slate-500">Need a firm fixture quote for this stem?</span>
+            <a href="#inquiry" onclick="prefillWithCalculated()" class="px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-all">
+              Lock In Fixture Terms &rarr;
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== COMMERCIAL FLEET SPECIFICATIONS ==================== -->
+  <section id="fleet" class="relative z-10 py-16 sm:py-20 bg-white/90 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div class="max-w-2xl">
+          <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+            Standard Fleet Profiles
+          </span>
+          <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+            Commercial Fleet Specifications
+          </h2>
+          <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+            Dimensional, volumetric, and deadweight cargo profiles across modern ocean-going vessel classes brokered by the Seaiters desk.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+          <button onclick="filterFleet('All')" class="fleet-btn px-3.5 py-1.5 rounded-md bg-slate-900 text-white font-semibold" data-cat="All">All Classes</button>
+          <button onclick="filterFleet('Dry Bulk')" class="fleet-btn px-3.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cat="Dry Bulk">Dry Bulk</button>
+          <button onclick="filterFleet('Wet Bulk / Tanker')" class="fleet-btn px-3.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cat="Wet Bulk / Tanker">Tanker</button>
+          <button onclick="filterFleet('Gas & Specialized')" class="fleet-btn px-3.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cat="Gas & Specialized">Gas / Special</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <!-- Capesize -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Dry Bulk">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Dry Bulk</span>
+              <span class="text-xs font-mono text-slate-400">IMO STANDARD</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">Capesize Bulk Carrier</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">180,000 - 210,000 DWT</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">292.0 m</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">45.0 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">18.3 m</span></div>
+              <div class="flex justify-between"><span>Hold Capacity:</span><span class="font-semibold text-slate-900">9 Holds (~220,000 cbm)</span></div>
+              <div class="flex justify-between"><span>Cargo Gear:</span><span class="font-semibold text-slate-900">Gearless (Shore Cranes)</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Iron Ore, Coking Coal, Bauxite</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">Tubarao / Port Hedland &rarr; Far East</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <div class="flex items-center gap-2 w-full">
+              <a href="#inquiry" onclick="prefillCharterForm('Capesize Bulk Carrier')" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+                <span>Fix Capesize Tonnage</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+              <button type="button" onclick="setFleetCamera('bulker')" title="Inspect 3D Miniature Model" class="px-3 py-2.5 rounded-lg bg-slate-50 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1">
+                <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px] font-bold">3D</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kamsarmax -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Dry Bulk">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Dry Bulk</span>
+              <span class="text-xs font-mono text-slate-400">IMO STANDARD</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">Kamsarmax / Panamax</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">82,000 - 85,000 DWT</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">229.0 m (Max Kamsar)</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">32.26 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">14.5 m</span></div>
+              <div class="flex justify-between"><span>Hold Capacity:</span><span class="font-semibold text-slate-900">7 Holds (~97,000 cbm)</span></div>
+              <div class="flex justify-between"><span>Cargo Gear:</span><span class="font-semibold text-slate-900">Gearless / 4x30 MT</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Grain, Soybeans, Thermal Coal</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">US Gulf / Santos &rarr; Far East &amp; Med</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Kamsarmax Bulker')" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+              <span>Fix Kamsarmax Tonnage</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- VLCC Tanker -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Wet Bulk / Tanker">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Crude Tanker</span>
+              <span class="text-xs font-mono text-slate-400">SIRE 2.0 CLEARED</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">VLCC Crude Tanker</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">300,000 - 320,000 DWT</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">333.0 m</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">60.0 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">22.5 m</span></div>
+              <div class="flex justify-between"><span>Capacity:</span><span class="font-semibold text-slate-900">~2,000,000 Barrels Crude</span></div>
+              <div class="flex justify-between"><span>Cargo Gear:</span><span class="font-semibold text-slate-900">2 x 20 MT Hose Cranes</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Arab Light, Maya, Basrah Heavy</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">Ras Tanura &rarr; Ningbo / Rotterdam</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('VLCC Crude Tanker')" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+              <span>Fix VLCC Tonnage</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- LNG Carrier -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Gas & Specialized">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Gas &amp; Cryogenic</span>
+              <span class="text-xs font-mono text-slate-400">ME-GA DUAL FUEL</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">174k CBM ME-GA LNG Carrier</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">95,000 DWT / 174,000 m3</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">299.0 m</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">46.4 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">12.0 m</span></div>
+              <div class="flex justify-between"><span>Tank System:</span><span class="font-semibold text-slate-900">Membrane GTT No96 (-163°C)</span></div>
+              <div class="flex justify-between"><span>Boil-Off Rate:</span><span class="font-semibold text-slate-900">0.085% per day</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Liquefied Natural Gas (LNG)</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">Sabine Pass / Corpus Christi &rarr; Europe</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <div class="flex items-center gap-2 w-full">
+              <a href="#inquiry" onclick="prefillCharterForm('LNG Carrier')" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+                <span>Fix LNG Tonnage</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+              <button type="button" onclick="setFleetCamera('lng')" title="Inspect 3D Miniature Model" class="px-3 py-2.5 rounded-lg bg-slate-50 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1">
+                <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px] font-bold">3D</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aframax / LR2 -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Wet Bulk / Tanker">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Product Tanker</span>
+              <span class="text-xs font-mono text-slate-400">EPOXY COATED</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">Aframax / LR2 Tanker</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">110,000 - 115,000 DWT</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">249.9 m</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">44.0 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">15.0 m</span></div>
+              <div class="flex justify-between"><span>Capacity:</span><span class="font-semibold text-slate-900">~800,000 Barrels</span></div>
+              <div class="flex justify-between"><span>Manifold:</span><span class="font-semibold text-slate-900">15 MT Center Crane</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Jet Fuel, Gas Oil, Naphtha</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">Arabian Gulf &rarr; Singapore / UKC</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Aframax Tanker')" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+              <span>Fix LR2 Tonnage</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Heavy Lift Multipurpose -->
+        <div class="fleet-card clean-card p-6 rounded-xl flex flex-col justify-between" data-category="Gas & Specialized">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">Specialized</span>
+              <span class="text-xs font-mono text-slate-400">900 MT TANDEM</span>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900 mb-1">Heavy-Lift Multipurpose</h3>
+            <div class="text-xs font-mono font-semibold text-slate-700 mb-4">19,500 DWT Tweendecker</div>
+
+            <div class="space-y-1.5 text-xs font-mono bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-slate-700">
+              <div class="flex justify-between"><span>Length (LOA):</span><span class="font-semibold text-slate-900">166.0 m</span></div>
+              <div class="flex justify-between"><span>Beam:</span><span class="font-semibold text-slate-900">25.0 m</span></div>
+              <div class="flex justify-between"><span>Draft:</span><span class="font-semibold text-slate-900">9.5 m</span></div>
+              <div class="flex justify-between"><span>Cargo Cranes:</span><span class="font-semibold text-slate-900">2 x 450 MT (900 MT Tandem)</span></div>
+              <div class="flex justify-between"><span>Hold:</span><span class="font-semibold text-slate-900">Open Top Tweendecker</span></div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <span class="block font-mono text-[11px] text-slate-500">Stems: Wind Turbines, Plant, Modules</span>
+              <span class="block font-mono text-[11px] text-slate-500 italic">Europe &rarr; Singapore / Middle East</span>
+            </div>
+          </div>
+
+          <div class="pt-5 mt-5 border-t border-slate-100 font-mono text-xs">
+            <a href="#inquiry" onclick="prefillCharterForm('Heavy-Lift Multipurpose')" class="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-900 text-slate-800 hover:text-white font-medium transition-all">
+              <span>Fix Heavy-Lift Tonnage</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== STRATEGIC HUBS & CHOKEPOINT TELEMETRY ==================== -->
+  <section id="hub-telemetry" class="relative z-10 py-16 sm:py-20 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="max-w-3xl mb-10">
+        <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+          Port Agency Telemetry
+        </span>
+        <h2 class="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+          Strategic Commercial Desks &amp; Chokepoint Advisory
+        </h2>
+        <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed">
+          Direct operational contacts, bunker liquidity ratings, and real-time transit status across primary global trade corridors.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-6 font-mono text-xs">
+        <button onclick="setHubProfile('singapore')" class="hub-btn px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold" data-h="singapore">Singapore Hub</button>
+        <button onclick="setHubProfile('rotterdam')" class="hub-btn px-4 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-100" data-h="rotterdam">Rotterdam (ARA)</button>
+        <button onclick="setHubProfile('dubai')" class="hub-btn px-4 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-100" data-h="dubai">Dubai &amp; Fujairah</button>
+        <button onclick="setHubProfile('houston')" class="hub-btn px-4 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-100" data-h="houston">Houston Gulf</button>
+        <button onclick="setHubProfile('shanghai')" class="hub-btn px-4 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-100" data-h="shanghai">Shanghai &amp; Ningbo</button>
+      </div>
+
+      <div class="clean-card p-6 sm:p-8 rounded-xl mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 font-mono text-xs">
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">DESK LOCATION:</span>
+            <div class="text-xl font-serif font-bold text-slate-900 mt-1" id="hub-title">Singapore Commercial HQ</div>
+            <p class="text-slate-600 text-[11px] mt-1" id="hub-duty">Asia-Pacific Bunkering, Crew &amp; Chartering</p>
+          </div>
+
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">VHF &amp; PILOTAGE:</span>
+            <div class="text-base font-bold text-slate-900 mt-1" id="hub-comm">VHF Ch. 12 / 68 (VTIS East)</div>
+            <span class="text-slate-600 text-[11px] block mt-1" id="hub-phone-txt">Direct: +65 6832 9400</span>
+          </div>
+
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">BUNKER AVAILABILITY:</span>
+            <div class="text-base font-bold text-emerald-700 mt-1" id="hub-bunk-txt">High (VLSFO / MGO / Bio-B30)</div>
+            <span class="text-slate-500 text-[11px] block mt-1">Average Barge Lead: 3.5 hrs</span>
+          </div>
+
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">ACTIVE MONITORING:</span>
+            <div class="text-2xl font-bold text-slate-900 mt-1" id="hub-vessel-count">42 Fixtures in Transit</div>
+            <span class="text-emerald-700 text-[11px] block mt-1">Port Congestion: Low (&lt; 6h)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+        <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
+          <div>
+            <span class="text-slate-900 font-bold block">Malacca Strait</span>
+            <span class="text-slate-500 text-[11px]">Normal Passage</span>
+          </div>
+          <div class="text-right text-[10px] text-slate-400">Wait: 0h<br>Draft: 20.5m</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
+          <div>
+            <span class="text-slate-900 font-bold block">Suez Canal</span>
+            <span class="text-slate-700 font-semibold text-[11px]">Convoy Regulated</span>
+          </div>
+          <div class="text-right text-[10px] text-slate-400">Wait: 4.5h<br>Draft: 20.1m</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
+          <div>
+            <span class="text-slate-900 font-bold block">Panama Canal</span>
+            <span class="text-slate-700 font-semibold text-[11px]">Draft Restricted</span>
+          </div>
+          <div class="text-right text-[10px] text-slate-400">Wait: 12h<br>Draft: 44.0 ft</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
+          <div>
+            <span class="text-slate-900 font-bold block">Strait of Hormuz</span>
+            <span class="text-slate-700 font-semibold text-[11px]">Enhanced Security</span>
+          </div>
+          <div class="text-right text-[10px] text-slate-400">Wait: 0h<br>Security: Lvl 2</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== LIVE GLOBAL AIS VESSEL TRACKER ==================== -->
+  <section id="ais-tracker" class="relative z-10 py-16 sm:py-20 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Title & Telemetry Header -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        <div>
+          <div class="flex items-center gap-2 mb-2 font-mono text-xs">
+            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold tracking-wider uppercase text-[10px] flex items-center gap-1.5 border border-blue-200">
+              <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+              LIVE AIS CLASS-A TELEMETRY
+            </span>
+            <span class="text-slate-400 font-mono text-[11px]">VHF CH. 87B/88B &bull; SATELLITE UPLINK ACTIVE</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-serif font-bold text-slate-900 tracking-tight">
+            Live Global AIS Ship Tracking &amp; Corridor Radar
+          </h2>
+          <p class="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl font-sans">
+            Real-time Automatic Identification System (AIS) transponder tracking across global shipping lanes. Monitor vessel speed over ground (SOG), true course (COG), and chokepoint transit queues.
+          </p>
+        </div>
+
+        <!-- Telemetry Metrics Strip -->
+        <div class="flex items-center gap-4 sm:gap-6 font-mono text-xs bg-slate-50 p-3 rounded-xl border border-slate-200 shrink-0">
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">MONITORED FLEET</span>
+            <div class="text-base font-bold text-slate-900 mt-0.5" id="ais-total-counter">24,190 Vessels</div>
+          </div>
+          <div class="h-8 w-px bg-slate-200"></div>
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">SEAITERS FIXTURES</span>
+            <div class="text-base font-bold text-blue-600 mt-0.5">38 Underway</div>
+          </div>
+          <div class="h-8 w-px bg-slate-200"></div>
+          <div>
+            <span class="text-slate-400 text-[10px] block uppercase font-bold">UPLINK LATENCY</span>
+            <div class="text-base font-bold text-emerald-600 mt-0.5">&lt; 1.2s (Realtime)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Corridor Quick Jumps & Search Controls -->
+      <div class="clean-card p-4 rounded-xl mb-6 font-mono text-xs">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Chokepoint Jump Buttons -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-slate-400 text-[11px] font-bold mr-1 uppercase">Corridors:</span>
+            <button onclick="panToChokepoint('global')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-slate-900 text-white font-semibold" data-cp="global">Global Overview</button>
+            <button onclick="panToChokepoint('singapore')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="singapore">Singapore Strait</button>
+            <button onclick="panToChokepoint('suez')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="suez">Suez &amp; Red Sea</button>
+            <button onclick="panToChokepoint('hormuz')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="hormuz">Strait of Hormuz</button>
+            <button onclick="panToChokepoint('panama')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="panama">Panama Canal</button>
+            <button onclick="panToChokepoint('dover')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="dover">English Channel</button>
+            <button onclick="panToChokepoint('gibraltar')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="gibraltar">Gibraltar</button>
+            <button onclick="panToChokepoint('houston')" class="ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" data-cp="houston">Houston Gulf</button>
+          </div>
+
+          <!-- Vessel Search Input & Feed Config -->
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1 sm:w-64">
+              <input type="text" id="ais-search-input" oninput="filterAisVessels()" placeholder="Search Vessel Name or IMO..." class="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:bg-white focus:border-slate-900 focus:outline-none">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+            </div>
+            <button onclick="openAisConfigModal()" title="Configure Live Satellite AIS Feed API" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold flex items-center gap-1.5 shrink-0">
+              <i data-lucide="radio" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span class="hidden sm:inline">AIS Stream API</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Vessel Type Category Filters -->
+        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2 text-[11px]">
+          <span class="text-slate-400 font-bold uppercase mr-1">Vessel Classes:</span>
+          <button onclick="filterAisType('All')" class="ais-type-btn px-2 py-1 rounded bg-slate-800 text-white font-medium" data-type="All">All Tonnage (10)</button>
+          <button onclick="filterAisType('Tanker')" class="ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="Tanker">
+            <span class="inline-block w-2 h-2 rounded-full bg-rose-500 mr-1"></span>Tankers (ULCC / VLCC)
+          </button>
+          <button onclick="filterAisType('Bulker')" class="ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="Bulker">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Dry Bulk (Capesize / Valemax)
+          </button>
+          <button onclick="filterAisType('Container')" class="ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="Container">
+            <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Container (ULCV)
+          </button>
+          <button onclick="filterAisType('Gas')" class="ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="Gas">
+            <span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Gas Carriers (LNG / VLGC)
+          </button>
+          <button onclick="filterAisType('Pilot')" class="ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="Pilot">
+            <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pilots &amp; Tugs
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Map & Vessel Dossier Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Interactive Leaflet AIS Map Container -->
+        <div class="lg:col-span-8 clean-card rounded-2xl overflow-hidden border border-slate-200 relative shadow-sm">
+          
+          <!-- Map Overlay Telemetry HUD -->
+          <div class="absolute top-3 left-3 z-[1000] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-[11px] text-slate-700 shadow-sm flex items-center gap-2 pointer-events-none">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>AIS TRANSIT STATUS: <strong class="text-slate-900">10 MONITORED FIXTURES ACTIVE</strong></span>
+          </div>
+
+          <!-- Live Coordinate & Zoom Indicator -->
+          <div class="absolute bottom-3 left-3 z-[1000] bg-white/90 backdrop-blur-md px-2.5 py-1 rounded border border-slate-200 font-mono text-[10px] text-slate-500 pointer-events-none">
+            WGS84 LAT/LON &bull; Mercator &bull; OpenSeaMap Layer
+          </div>
+
+          <!-- Leaflet Map Mount Point -->
+          <div id="ais-map" class="w-full h-[520px] sm:h-[580px] bg-slate-100"></div>
+        </div>
+
+        <!-- Right Flank: Detailed AIS Transponder Dossier -->
+        <div class="lg:col-span-4 flex flex-col gap-4 font-mono text-xs">
+          
+          <div class="clean-card p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden" id="ais-dossier-card">
+            
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+                <span class="font-bold text-slate-900 text-xs">VESSEL TRANSPONDER DOSSIER</span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200" id="dossier-status-badge">
+                SELECT A VESSEL
+              </span>
+            </div>
+
+            <!-- Dynamic Vessel Info Area -->
+            <div id="dossier-content" class="space-y-3">
+              <div class="text-center py-10 px-4 text-slate-400">
+                <i data-lucide="compass" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                <p class="font-sans text-xs text-slate-500">Click any vessel icon on the global map to stream live AIS transponder telemetry, cargo manifests, and voyage progress.</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Corridor Watchlist -->
+          <div class="clean-card p-4 rounded-xl border border-slate-200">
+            <div class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+              <span>Chokepoint Telemetry Watch</span>
+              <span class="text-[10px] text-slate-400">AUTOMATIC TRANSIT LOG</span>
+            </div>
+
+            <div class="space-y-2 text-[11px]">
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-600 font-medium">Strait of Malacca (VTIS)</span>
+                <span class="text-emerald-700 font-semibold">Free Flow (0h delay)</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-600 font-medium">Suez Canal Convoy</span>
+                <span class="text-slate-700 font-semibold">Northbound 14 kts</span>
+              </div>
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-600 font-medium">Strait of Hormuz</span>
+                <span class="text-slate-700 font-semibold">ISPS Level 2 Standard</span>
+              </div>
+              <div class="flex items-center justify-between py-1">
+                <span class="text-slate-600 font-medium">Houston Ship Channel</span>
+                <span class="text-emerald-700 font-semibold">Pilots Operating 24/7</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== COMMERCIAL INQUIRY FORM (CLEAN WHITE) ==================== -->
+  <section id="inquiry" class="relative z-10 py-16 sm:py-24 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-10">
+        <span class="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block mb-1">
+          Trading Desk Execution
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-serif font-bold text-slate-900 tracking-tight">
+          Commercial Fixture Inquiry
+        </h2>
+        <p class="mt-2 text-slate-600 text-sm max-w-lg mx-auto">
+          Submit your cargo stem or vessel position. Our commercial brokers respond with preliminary freight terms within 60 minutes.
+        </p>
+
+        <!-- Primary Commercial Contact Strip -->
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-2.5 font-mono text-xs">
+          <a href="tel:+919381477267" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-all shadow-sm">
+            <i data-lucide="phone-call" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>Primary Desk: +91 9381477267</span>
+          </a>
+          <a href="https://wa.me/919381477267" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 font-medium transition-all">
+            <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>WhatsApp 24/7 Desk</span>
+          </a>
+          <a href="mailto:operations@seaiters.com" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 font-medium transition-all">
+            <i data-lucide="mail" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>operations@seaiters.com</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="flex justify-center mb-8">
+        <div class="bg-slate-100 p-1 rounded-xl border border-slate-200 flex gap-2 font-mono text-xs">
+          <button id="btn-charter-tab" onclick="switchFormTab('charter')" class="px-6 py-2.5 rounded-lg font-bold uppercase transition-all bg-white text-slate-900 shadow-sm">
+            Charter a Vessel (Cargo Inquiry)
+          </button>
+          <button id="btn-tonnage-tab" onclick="switchFormTab('tonnage')" class="px-6 py-2.5 rounded-lg font-semibold uppercase transition-all text-slate-600 hover:text-slate-900">
+            Offer Tonnage / S&amp;P Broking
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm">
+        
+        <form id="form-charter" onsubmit="handleFixtureSubmit(event, 'Cargo Charter')" class="space-y-6">
+          <div class="border-b border-slate-100 pb-4 mb-6">
+            <h3 class="text-xl font-serif font-bold text-slate-900">Cargo Chartering Inquiry</h3>
+            <p class="text-xs text-slate-500 font-mono mt-1">Voyage charter, COA volume, or period time charter stem.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">CHARTERER / PRINCIPAL *</label>
+              <input required id="c-principal" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Anglo Global Commodities">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">COMMERCIAL CONTACT OFFICER *</label>
+              <input required id="c-officer" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="David Vance">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">CORPORATE EMAIL *</label>
+              <input required type="email" id="c-email" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="chartering@angloglobal.com">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">DIRECT TELEPHONE / WHATSAPP *</label>
+              <input required id="c-phone" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="+44 20 7946 0889">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">COMMODITY SPECIFICATION *</label>
+              <select id="c-commodity" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+                <option value="Iron Ore Fines">Iron Ore (Fines / Lumps)</option>
+                <option value="Coking Coal">Metallurgical / Coking Coal</option>
+                <option value="Grain / Soybeans">Grain / Soybeans / Wheat</option>
+                <option value="Crude Oil">Crude Oil (Heavy / Light)</option>
+                <option value="Clean Petroleum (Gas Oil / Jet)">Clean Petroleum (Gas Oil / Jet)</option>
+                <option value="Liquefied Natural Gas (LNG)">Liquefied Natural Gas (LNG)</option>
+                <option value="Project Cargo / Heavy Lift">Project Cargo / Turbines</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">VOLUME (MT +/- 10%) *</label>
+              <input required id="c-volume" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="175,000 MT">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">LOAD PORT / RANGE *</label>
+              <input required id="c-load" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Tubarao, Brazil">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">DISCHARGE PORT / RANGE *</label>
+              <input required id="c-discharge" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Qingdao, China">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">LAYCAN COMMENCEMENT *</label>
+              <input type="date" id="c-lay-start" value="2026-11-15" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">LAYCAN CANCELING *</label>
+              <input type="date" id="c-lay-end" value="2026-11-25" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">GEAR REQUIREMENT</label>
+              <select id="c-gear" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+                <option value="Gearless (Shore Cranes)">Gearless (Shore Cranes)</option>
+                <option value="Geared Min 4x30 MT">Geared 4x30 MT</option>
+                <option value="Heavy Lift Tandem">Heavy Lift Tandem</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-mono font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Submit Commercial Chartering Order</span>
+          </button>
+        </form>
+
+        <form id="form-tonnage" onsubmit="handleFixtureSubmit(event, 'Tonnage Offer')" class="space-y-6 hidden">
+          <div class="border-b border-slate-100 pb-4 mb-6">
+            <h3 class="text-xl font-serif font-bold text-slate-900">Tonnage Offer &amp; S&amp;P Mandate</h3>
+            <p class="text-xs text-slate-500 font-mono mt-1">Broadcast open vessel position or request certified S&amp;P broking.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">SHIPOWNER / COMMERCIAL MANAGER *</label>
+              <input required id="t-principal" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Pacific Maritime Holding">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">COMMERCIAL DESK OFFICER *</label>
+              <input required id="t-officer" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Marcus Thorne">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">DIRECT EMAIL *</label>
+              <input required type="email" id="t-email" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="fixtures@pacificmarine.com">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">TELEPHONE *</label>
+              <input required id="t-phone" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="+30 210 428 9000">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">VESSEL NAME *</label>
+              <input required id="t-vessel-name" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="MV PACIFIC HORIZON">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">IMO NUMBER</label>
+              <input id="t-imo" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="9784321">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">VESSEL TYPE *</label>
+              <select id="t-class" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+                <option value="Capesize (180k DWT)">Capesize (180k DWT)</option>
+                <option value="Kamsarmax (82k DWT)">Kamsarmax / Panamax (82k DWT)</option>
+                <option value="Ultramax (64k DWT)">Ultramax (64k DWT)</option>
+                <option value="VLCC (300k DWT)">VLCC Tanker (300k DWT)</option>
+                <option value="LNG (174k cbm)">LNG Carrier (174k cbm)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">DWT SUMMER *</label>
+              <input required id="t-dwt" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="181,200 DWT">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">OPEN PORT / POSITION *</label>
+              <input required id="t-open-port" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none" value="Singapore Anchorage">
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1.5">DEAL BASIS *</label>
+              <select id="t-basis" class="w-full px-3.5 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none">
+                <option value="Spot Voyage">Spot Voyage</option>
+                <option value="Time Charter (1-3 yrs)">Time Charter (1-3 yrs)</option>
+                <option value="S&P Outright Sale">S&P Outright Sale</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-mono font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Broadcast Tonnage Position</span>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== RECEIPT SLIP MODAL ==================== -->
+  <div id="slip-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl relative">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
+            <i data-lucide="check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-serif font-bold text-slate-900">Commercial Fixture Slip Generated</h4>
+            <span class="text-[11px] font-mono text-slate-500 font-bold" id="slip-ref">REF: SIT-FIXTURE-2026-9142</span>
+          </div>
+        </div>
+        <button onclick="closeSlipModal()" class="text-slate-400 hover:text-slate-900 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Transmission Status Banner -->
+      <div id="slip-status-banner" class="mb-3 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-mono flex items-center justify-between">
+        <div class="flex items-center gap-1.5 font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="slip-status-text">DISPATCHED TO OPERATIONS GATEWAY (HTTP 201)</span>
+        </div>
+        <span class="text-[10px] text-emerald-600" id="slip-timestamp">2026-10-22 10:48 UTC</span>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 font-mono text-xs space-y-2 mb-5" id="slip-content">
+      </div>
+
+      <!-- Action Buttons (Email, Print, Copy JSON) -->
+      <div class="flex flex-wrap items-center gap-2 mb-4 font-mono text-xs">
+        <a id="slip-mailto-link" href="#" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-center flex items-center justify-center gap-1.5 transition-all shadow-sm">
+          <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+          <span>Email operations@seaiters.com</span>
+        </a>
+        <button onclick="window.print()" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          <span>Print / PDF</span>
+        </button>
+        <button onclick="copySlipJson()" class="py-2.5 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copy JSON</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between gap-4 font-mono text-xs pt-3 border-t border-slate-100">
+        <div class="text-slate-500 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Broker SLA: &lt; 60 mins (London &amp; Singapore Desks)</span>
+        </div>
+        <button onclick="closeSlipModal()" class="px-5 py-2 rounded-lg bg-slate-900 text-white font-bold uppercase hover:bg-slate-800 transition-all cursor-pointer">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AIS FEED CONFIG MODAL ==================== -->
+  <div id="ais-config-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl relative font-mono text-xs">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="radio" class="w-4 h-4 text-blue-600"></i>
+          <h4 class="text-sm font-bold text-slate-900">Live Satellite AIS API Settings</h4>
+        </div>
+        <button onclick="closeAisConfigModal()" class="text-slate-400 hover:text-slate-900 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-slate-600 text-[11px] leading-relaxed mb-4 font-sans">
+        Seaiters is currently broadcasting from our high-fidelity simulated global transponder network. To pipe live global Class-A transponders directly from satellite feeds, enter your AISStream API key or custom REST endpoint.
+      </p>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">AISSTREAM.IO API KEY (OPTIONAL)</label>
+          <input type="text" id="ais-api-key-input" placeholder="e.g. 98a7bc... (from aisstream.io)" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none text-xs">
+          <span class="text-[10px] text-slate-400 mt-0.5 block">Free keys available at https://aisstream.io</span>
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">CUSTOM AIS REST ENDPOINT</label>
+          <input type="text" id="ais-custom-endpoint-input" value="/api/ais/vessels" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none text-xs">
+          <span class="text-[10px] text-slate-400 mt-0.5 block">Default: /api/ais/vessels (Seaiters Backend Server)</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeAisConfigModal()" class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold">Cancel</button>
+        <button onclick="saveAisConfig()" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FLOATING 3D FLEET INSPECTOR CONTROLLER HUD ==================== -->
+  <div id="fleet-3d-controller" class="fixed bottom-5 right-5 z-40 font-mono text-xs select-none">
+    
+    <!-- Collapsed Toggle Pill -->
+    <button id="btn-toggle-3d-hud" onclick="toggleFleetControlsModal()" class="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-slate-900/95 hover:bg-slate-800 text-white shadow-xl backdrop-blur-md border border-slate-700 cursor-pointer transition-all hover:scale-105">
+      <i data-lucide="box" class="w-4 h-4 text-blue-400"></i>
+      <span class="font-bold text-[11px] tracking-wider uppercase">3D Fleet Models</span>
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+    </button>
+
+    <!-- Expanded 3D Controller Panel -->
+    <div id="fleet-3d-panel" class="hidden mt-2 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-2xl max-w-xs w-80 text-slate-800">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+        <div class="flex items-center gap-1.5 font-bold text-slate-900 text-[11px]">
+          <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
+          <span>3D FLEET CAMERA FOCUS</span>
+        </div>
+        <button onclick="toggleFleetControlsModal()" class="text-slate-400 hover:text-slate-900">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <p class="text-[11px] text-slate-500 mb-3 font-sans">
+        Click any vessel or coastal structure to smoothly steer the camera into close-up inspection mode:
+      </p>
+
+      <!-- Ship Buttons Grid -->
+      <div class="grid grid-cols-2 gap-1.5 text-[11px] mb-3">
+        <button onclick="focus3DShip('overview')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-900 text-white text-left font-semibold truncate cursor-pointer" data-ship="overview">
+          🌐 Ocean Patrol
+        </button>
+        <button onclick="focus3DShip('container')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="container">
+          🚢 Container ULCV
+        </button>
+        <button onclick="focus3DShip('bulker')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="bulker">
+          🚢 Capesize 208k
+        </button>
+        <button onclick="focus3DShip('lng')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="lng">
+          🚢 LNG Spheres
+        </button>
+        <button onclick="focus3DShip('vlcc')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="vlcc">
+          🚢 VLCC Tanker
+        </button>
+        <button onclick="focus3DShip('pilot')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="pilot">
+          🚤 Offshore Pilot
+        </button>
+        <button onclick="focus3DShip('tug')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="tug">
+          🚜 Escort Tug
+        </button>
+        <button onclick="focus3DShip('lighthouse')" class="ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer" data-ship="lighthouse">
+          🗼 Reef Beacon
+        </button>
+      </div>
+
+      <!-- Live Inspected Ship Telemetry Card -->
+      <div id="inspector-telemetry" class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[10px] space-y-1">
+        <div class="flex justify-between"><span class="text-slate-400">Active Camera:</span><span class="font-bold text-slate-800" id="inspect-name">Ocean Overview Patrol</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Hydrodynamics:</span><span class="text-emerald-700 font-semibold" id="inspect-status">Swell &amp; Heave Active</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Scale Ratio:</span><span class="text-slate-700">1:150 Miniature Architectural</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MINIMALIST FOOTER ==================== -->
+  <footer class="relative z-10 bg-slate-50/95 backdrop-blur-sm border-t border-slate-200 py-12 text-slate-600 text-xs font-mono">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+        <div>
+          <div class="flex items-center gap-2 text-slate-900 font-serif text-lg font-bold mb-2">
+            <span>SEAITERS</span>
+          </div>
+          <p class="text-slate-500 text-xs leading-relaxed font-sans">
+            Independent commercial vessel brokerage, Sale &amp; Purchase asset advisory, and international port logistics in full compliance with BIMCO standards.
+          </p>
+        </div>
+
+        <div>
+          <div class="text-slate-900 font-bold uppercase tracking-wider mb-3">Primary Desks</div>
+          <ul class="space-y-1.5 text-slate-500">
+            <li><a href="#chartering" class="hover:text-slate-900">Vessel Chartering</a></li>
+            <li><a href="#shipbroking" class="hover:text-slate-900">Ship Broking &amp; S&amp;P</a></li>
+            <li><a href="#network" class="hover:text-slate-900">International Port Network</a></li>
+            <li><a href="#calculator" class="hover:text-slate-900">Voyage Estimator</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="text-slate-900 font-bold uppercase tracking-wider mb-3">Primary Contact &amp; Desks</div>
+          <ul class="space-y-1.5 text-slate-500">
+            <li class="text-slate-900 font-bold flex items-center gap-1.5">
+              <i data-lucide="phone-call" class="w-3.5 h-3.5 text-blue-600"></i>
+              <a href="tel:+919381477267" class="hover:text-blue-600">+91 9381477267 (Primary)</a>
+            </li>
+            <li class="text-emerald-700 font-semibold flex items-center gap-1.5">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <a href="https://wa.me/919381477267" target="_blank" rel="noopener" class="hover:underline">WhatsApp 24/7 Desk</a>
+            </li>
+            <li>Direct Desk: <a href="mailto:operations@seaiters.com" class="hover:text-slate-900">operations@seaiters.com</a></li>
+            <li>Singapore HQ: +65 6832 9400</li>
+            <li>London Desk: +44 20 7946 0991</li>
+            <li>Dubai Office: +971 4 368 7100</li>
+            <li>Houston Gulf: +1 713 588 3200</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="text-slate-900 font-bold uppercase tracking-wider mb-3">Institutional Compliance</div>
+          <p class="text-slate-500 text-[11px] leading-relaxed mb-2">
+            BIMCO Member ID: #78491-UK<br>
+            FONASBA Quality Standard Verified<br>
+            OFAC / UK / EU Sanctions Screened
+          </p>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
+        <div>&copy; 2026 Seaiters Maritime Global Ltd. All rights reserved.</div>
+        <div class="flex gap-4">
+          <a href="#" class="hover:text-slate-600">Sanctions Protocol</a>
+          <a href="#" class="hover:text-slate-600">BIMCO Pro-Formas</a>
+          <a href="#" class="hover:text-slate-600">Escrow Terms</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+
+    function updateClocks() {
+      const now = new Date();
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      document.getElementById('clock-ldn').innerText = new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'Europe/London' }).format(now);
+      document.getElementById('clock-sin').innerText = new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'Asia/Singapore' }).format(now);
+      document.getElementById('clock-dxb').innerText = new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'Asia/Dubai' }).format(now);
+      document.getElementById('clock-hou').innerText = new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'America/Chicago' }).format(now);
+    }
+    setInterval(updateClocks, 1000);
+    updateClocks();
+
+    function filterFleet(cat) {
+      document.querySelectorAll('.fleet-btn').forEach(b => {
+        if (b.getAttribute('data-cat') === cat) {
+          b.className = "fleet-btn px-3.5 py-1.5 rounded-md bg-slate-900 text-white font-semibold";
+        } else {
+          b.className = "fleet-btn px-3.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50";
+        }
+      });
+
+      document.querySelectorAll('.fleet-card').forEach(c => {
+        if (cat === 'All' || c.getAttribute('data-category') === cat) {
+          c.style.display = 'flex';
+        } else {
+          c.style.display = 'none';
+        }
+      });
+    }
+
+    const ROUTES = {
+      'tub-qin': { nm: 11200, name: 'Tubarao -> Qingdao', baseRate: 24.80 },
+      'hed-qin': { nm: 3650, name: 'Port Hedland -> Qingdao', baseRate: 9.60 },
+      'usg-ara': { nm: 4850, name: 'US Gulf -> Rotterdam', baseRate: 18.20 },
+      'meg-chi': { nm: 5400, name: 'Ras Tanura -> Ningbo', baseRate: 21.50 },
+      'sab-zee': { nm: 4950, name: 'Sabine Pass -> Zeebrugge', baseRate: 64.50 },
+    };
+
+    const VESSELS = {
+      capesize: { dailyBurn: 35, cii: 'Grade B', mult: 1.0 },
+      panamax: { dailyBurn: 24, cii: 'Grade A', mult: 0.95 },
+      ultramax: { dailyBurn: 19, cii: 'Grade A', mult: 0.92 },
+      vlcc: { dailyBurn: 58, cii: 'Grade B', mult: 1.1 },
+      lng: { dailyBurn: 45, cii: 'Grade A', mult: 1.3 },
+    };
+
+    function updateSpeedVal(val) {
+      document.getElementById('speed-val').innerText = `${val} kn`;
+      runSimulation();
+    }
+
+    function runSimulation() {
+      const vKey = document.getElementById('sim-vessel').value;
+      const rKey = document.getElementById('sim-route').value;
+      const cargo = parseFloat(document.getElementById('sim-cargo').value) || 170000;
+      const speed = parseFloat(document.getElementById('sim-speed').value) || 13.5;
+
+      const route = ROUTES[rKey] || ROUTES['tub-qin'];
+      const vessel = VESSELS[vKey] || VESSELS['capesize'];
+
+      const transitDays = route.nm / (speed * 24);
+      const fuelTotal = Math.round(transitDays * vessel.dailyBurn);
+      const estRate = (route.baseRate * (speed / 13.5) * vessel.mult).toFixed(2);
+      const totalFreight = Math.round(cargo * estRate);
+
+      document.getElementById('out-transit').innerText = `${transitDays.toFixed(1)} Days`;
+      document.getElementById('out-fuel').innerText = `${fuelTotal.toLocaleString()} MT`;
+      document.getElementById('out-cii').innerText = vessel.cii;
+      document.getElementById('out-rate').innerText = `$${estRate} / MT`;
+      document.getElementById('out-total').innerText = `$${totalFreight.toLocaleString()}`;
+    }
+    runSimulation();
+
+    const HUB_DATA = {
+      singapore: {
+        title: "Singapore Commercial HQ",
+        duty: "Asia-Pacific Bunkering, Crew & Chartering",
+        comm: "VHF Ch. 12 / 68 (VTIS East)",
+        phone: "Direct: +65 6832 9400",
+        bunk: "High (VLSFO / MGO / Bio-B30)",
+        count: "42 Fixtures in Transit"
+      },
+      rotterdam: {
+        title: "Rotterdam (ARA Hub)",
+        duty: "Northwest Europe Deepwater Discharging & Green Bunkers",
+        comm: "VHF Ch. 11 / 14 (VTS Sector Maas)",
+        phone: "Direct: +31 10 490 2800",
+        bunk: "High (LSMGO / Methanol / Bio)",
+        count: "38 Fixtures in Transit"
+      },
+      dubai: {
+        title: "Dubai & Fujairah Desk",
+        duty: "Middle East Crude Export & Offshore Anchorage",
+        comm: "VHF Ch. 16 / 08 (Fujairah Control)",
+        phone: "Direct: +971 4 368 7100",
+        bunk: "High (Heavy Fuel / VLSFO)",
+        count: "35 Fixtures in Transit"
+      },
+      houston: {
+        title: "Houston Gulf Operations",
+        duty: "Americas Energy, US Gulf Crude & LNG Export",
+        comm: "VHF Ch. 13 (Houston Pilots)",
+        phone: "Direct: +1 713 588 3200",
+        bunk: "High (VLSFO / Clean Products)",
+        count: "29 Fixtures in Transit"
+      },
+      shanghai: {
+        title: "Shanghai & Ningbo Hub",
+        duty: "Far East Yard Supervision & Bulk Discharge",
+        comm: "VHF Ch. 09 (Wusong VTS)",
+        phone: "Direct: +86 21 6140 8800",
+        bunk: "High (Bonded Low Sulfur)",
+        count: "31 Fixtures in Transit"
+      }
+    };
+
+    function setHubProfile(id) {
+      const d = HUB_DATA[id];
+      if (!d) return;
+
+      document.querySelectorAll('.hub-btn').forEach(b => {
+        if (b.getAttribute('data-h') === id) {
+          b.className = "hub-btn px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold";
+        } else {
+          b.className = "hub-btn px-4 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-100";
+        }
+      });
+
+      document.getElementById('hub-title').innerText = d.title;
+      document.getElementById('hub-duty').innerText = d.duty;
+      document.getElementById('hub-comm').innerText = d.comm;
+      document.getElementById('hub-phone-txt').innerText = d.phone;
+      document.getElementById('hub-bunk-txt').innerText = d.bunk;
+      document.getElementById('hub-vessel-count').innerText = d.count;
+    }
+
+    function switchFormTab(tab) {
+      const cBtn = document.getElementById('btn-charter-tab');
+      const tBtn = document.getElementById('btn-tonnage-tab');
+      const cForm = document.getElementById('form-charter');
+      const tForm = document.getElementById('form-tonnage');
+
+      if (tab === 'charter') {
+        cBtn.className = "px-6 py-2.5 rounded-lg font-bold uppercase transition-all bg-white text-slate-900 shadow-sm";
+        tBtn.className = "px-6 py-2.5 rounded-lg font-semibold uppercase transition-all text-slate-600 hover:text-slate-900";
+        cForm.classList.remove('hidden');
+        tForm.classList.add('hidden');
+      } else {
+        tBtn.className = "px-6 py-2.5 rounded-lg font-bold uppercase transition-all bg-white text-slate-900 shadow-sm";
+        cBtn.className = "px-6 py-2.5 rounded-lg font-semibold uppercase transition-all text-slate-600 hover:text-slate-900";
+        tForm.classList.remove('hidden');
+        cForm.classList.add('hidden');
+      }
+    }
+
+    function prefillCharterForm(cargoClass) {
+      switchFormTab('charter');
+      document.getElementById('c-commodity').value = cargoClass.includes('LNG') ? 'Liquefied Natural Gas (LNG)' : 'Iron Ore Fines';
+      window.location.hash = 'inquiry';
+    }
+
+    function prefillTonnageForm(dealType) {
+      switchFormTab('tonnage');
+      document.getElementById('t-basis').value = dealType.includes('Sale') ? 'S&P Outright Sale' : 'Spot Voyage';
+      window.location.hash = 'inquiry';
+    }
+
+    function prefillWithCalculated() {
+      switchFormTab('charter');
+      const cargo = document.getElementById('sim-cargo').value;
+      document.getElementById('c-volume').value = `${Number(cargo).toLocaleString()} MT`;
+      window.location.hash = 'inquiry';
+    }
+
+    // ================= COMMERCIAL INQUIRY API & FIXTURE ENGINE =================
+    let lastFixturePayload = null;
+
+    async function handleFixtureSubmit(e, type) {
+      e.preventDefault();
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      const prefix = type === 'Cargo Charter' ? 'CHTR' : 'TON';
+      const ref = `SIT-${prefix}-2026-${rand}`;
+
+      document.getElementById('slip-ref').innerText = `REF: ${ref}`;
+      const statusBanner = document.getElementById('slip-status-banner');
+      const statusText = document.getElementById('slip-status-text');
+      const timestampEl = document.getElementById('slip-timestamp');
+
+      const now = new Date();
+      timestampEl.innerText = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+      statusText.innerText = 'DISPATCHING TO OPERATIONS GATEWAY (TLS 1.3)...';
+      
+      let html = '';
+      let payload = {
+        reference: ref,
+        orderType: type,
+        timestamp: now.toISOString(),
+      };
+
+      if (type === 'Cargo Charter') {
+        const principal = document.getElementById('c-principal').value;
+        const officer = document.getElementById('c-officer').value;
+        const email = document.getElementById('c-email').value;
+        const phone = document.getElementById('c-phone').value;
+        const comm = document.getElementById('c-commodity').value;
+        const vol = document.getElementById('c-volume').value;
+        const load = document.getElementById('c-load').value;
+        const dis = document.getElementById('c-discharge').value;
+        const layStart = document.getElementById('c-lay-start').value;
+        const layEnd = document.getElementById('c-lay-end').value;
+        const gear = document.getElementById('c-gear').value;
+
+        payload = {
+          ...payload,
+          principal,
+          officer,
+          email,
+          phone,
+          commodity: comm,
+          volume: vol,
+          loadPort: load,
+          dischargePort: dis,
+          laycan: `${layStart} to ${layEnd}`,
+          gearRequirements: gear
+        };
+
+        html = `
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Order Type:</span><span class="text-slate-900 font-bold">Commercial Voyage Charter</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Principal:</span><span class="text-slate-900 font-semibold">${principal}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Contact Officer:</span><span class="text-slate-900">${officer} (${email})</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Commodity & Volume:</span><span class="text-slate-900 font-bold text-emerald-700">${vol} of ${comm}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Trade Route:</span><span class="text-slate-900">${load} &rarr; ${dis}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Laycan Window:</span><span class="text-slate-900">${layStart} to ${layEnd}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Destination Desk:</span><span class="text-emerald-700 font-bold">operations@seaiters.com</span></div>
+          <div class="flex justify-between pt-1"><span class="text-slate-500">Gear Requirement:</span><span class="text-slate-900">${gear}</span></div>
+        `;
+      } else {
+        const principal = document.getElementById('t-principal').value;
+        const officer = document.getElementById('t-officer').value;
+        const email = document.getElementById('t-email').value;
+        const phone = document.getElementById('t-phone').value;
+        const vname = document.getElementById('t-vessel-name').value;
+        const imo = document.getElementById('t-imo').value;
+        const vclass = document.getElementById('t-class').value;
+        const dwt = document.getElementById('t-dwt').value;
+        const port = document.getElementById('t-open-port').value;
+        const basis = document.getElementById('t-basis').value;
+
+        payload = {
+          ...payload,
+          principal,
+          officer,
+          email,
+          phone,
+          vesselName: vname,
+          imoNumber: imo,
+          vesselClass: vclass,
+          summerDwt: dwt,
+          openPort: port,
+          dealBasis: basis
+        };
+
+        html = `
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Order Type:</span><span class="text-slate-900 font-bold">Tonnage Offer & S&P</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Destination Desk:</span><span class="text-emerald-700 font-bold">operations@seaiters.com</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Shipowner Entity:</span><span class="text-slate-900 font-semibold">${principal}</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Commercial Officer:</span><span class="text-slate-900">${officer} (${email})</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Vessel & Class:</span><span class="text-slate-900 font-bold text-blue-700">${vname} (${vclass} - IMO: ${imo})</span></div>
+          <div class="flex justify-between border-b border-slate-200 pb-1.5"><span class="text-slate-500">Deadweight Summer:</span><span class="text-slate-900">${dwt}</span></div>
+          <div class="flex justify-between pt-1"><span class="text-slate-500">Position & Terms:</span><span class="text-slate-900 font-semibold">${port} (${basis})</span></div>
+        `;
+      }
+
+      lastFixturePayload = payload;
+      document.getElementById('slip-content').innerHTML = html;
+
+      // Construct prefilled Mailto URL directed to operations@seaiters.com
+      const mailSubj = encodeURIComponent(`[SEAITERS FIXTURE] ${ref} - ${payload.principal} (${payload.orderType})`);
+      const mailBody = encodeURIComponent(
+        `To: operations@seaiters.com\n` +
+        `Subject: [SEAITERS FIXTURE] ${ref} - ${payload.principal}\n\n` +
+        `Dear Seaiters Operations Desk (operations@seaiters.com),\n\n` +
+        `Please register our commercial fixture inquiry as generated on the Seaiters Maritime Platform:\n\n` +
+        `REFERENCE: ${ref}\n` +
+        `TYPE: ${payload.orderType}\n` +
+        `PRINCIPAL: ${payload.principal}\n` +
+        `OFFICER: ${payload.officer} (${payload.email} | ${payload.phone})\n` +
+        `DESTINATION DESK: operations@seaiters.com\n` +
+        `DETAILS: ${payload.commodity ? `${payload.volume} ${payload.commodity} (${payload.loadPort} -> ${payload.dischargePort})` : `${payload.vesselName} (${payload.vesselClass}) open at ${payload.openPort}`}\n\n` +
+        `Please revert with indicative freight rate & fixture terms within standard 60-minute SLA.\n\n` +
+        `Best regards,\n${payload.officer}`
+      );
+      document.getElementById('slip-mailto-link').href = `mailto:operations@seaiters.com?subject=${mailSubj}&body=${mailBody}`;
+
+      document.getElementById('slip-modal').classList.remove('hidden');
+      lucide.createIcons();
+
+      // Dispatch to Backend REST API (connected to operations@seaiters.com)
+      const customApiUrl = localStorage.getItem('seaiters_api_endpoint') || '/api/inquiry';
+      try {
+        const response = await fetch(customApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            forwardTo: 'operations@seaiters.com'
+          })
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          statusBanner.className = "mb-3 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-mono flex items-center justify-between";
+          statusText.innerText = `CONFIRMED • DISPATCHED TO operations@seaiters.com (REF: ${resData.reference || ref})`;
+        } else {
+          throw new Error('HTTP Status ' + response.status);
+        }
+      } catch (err) {
+        // Fallback to client storage
+        console.info('Backend server not reachable on', customApiUrl, '- storing inquiry locally in queue.', err.message);
+        try {
+          const queue = JSON.parse(localStorage.getItem('seaiters_inquiries') || '[]');
+          queue.unshift({
+            ...payload,
+            forwardTo: 'operations@seaiters.com'
+          });
+          localStorage.setItem('seaiters_inquiries', JSON.stringify(queue.slice(0, 50)));
+        } catch (storageErr) {}
+
+        statusBanner.className = "mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-mono flex items-center justify-between";
+        statusText.innerText = `CONFIRMED • QUEUED FOR operations@seaiters.com (OFFLINE READY)`;
+      }
+
+        statusBanner.className = "mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-mono flex items-center justify-between";
+        statusText.innerText = `CONFIRMED • QUEUED IN SECURE CLIENT CACHE (OFFLINE READY)`;
+      }
+    }
+
+    function closeSlipModal() {
+      document.getElementById('slip-modal').classList.add('hidden');
+    }
+
+    function copySlipJson() {
+      if (!lastFixturePayload) return;
+      navigator.clipboard.writeText(JSON.stringify(lastFixturePayload, null, 2)).then(() => {
+        alert('Fixture telemetry JSON copied to clipboard!');
+      });
+    }
+
+    // Modal & Controller Toggles
+    function toggleFleetControlsModal() {
+      const panel = document.getElementById('fleet-3d-panel');
+      if (panel) {
+        panel.classList.toggle('hidden');
+      }
+    }
+
+    function openAisConfigModal() {
+      const key = localStorage.getItem('seaiters_aisstream_key') || '';
+      const endpoint = localStorage.getItem('seaiters_api_endpoint') || '/api/ais/vessels';
+      document.getElementById('ais-api-key-input').value = key;
+      document.getElementById('ais-custom-endpoint-input').value = endpoint;
+      document.getElementById('ais-config-modal').classList.remove('hidden');
+    }
+
+    function closeAisConfigModal() {
+      document.getElementById('ais-config-modal').classList.add('hidden');
+    }
+
+    function saveAisConfig() {
+      const key = document.getElementById('ais-api-key-input').value.trim();
+      const endpoint = document.getElementById('ais-custom-endpoint-input').value.trim();
+      localStorage.setItem('seaiters_aisstream_key', key);
+      localStorage.setItem('seaiters_api_endpoint', endpoint);
+      closeAisConfigModal();
+      alert('AIS Configuration saved! Re-syncing telemetry feed...');
+      if (typeof initAisTelemetry === 'function') {
+        initAisTelemetry();
+      }
+    }
+
+    // ================= LIVE GLOBAL AIS RADAR & FLEET TRACKING SYSTEM =================
+    const AIS_GLOBAL_FLEET = [
+      {
+        mmsi: '563048000',
+        imo: '9811000',
+        name: 'EVER GLOBE',
+        callSign: '9V8821',
+        flag: 'Singapore',
+        flagCode: 'SG',
+        type: 'Container',
+        classDesc: 'Container (ULCV 20,000 TEU)',
+        dwt: 220000,
+        length: 400,
+        beam: 59,
+        draught: 16.2,
+        sog: 17.8,
+        cog: 284,
+        heading: 284,
+        lat: 1.2240,
+        lon: 103.7820,
+        destination: 'ROTTERDAM (NL)',
+        eta: '2026-10-31 06:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '19,800 TEU High Value Dry & Reefer Goods',
+        corridor: 'singapore',
+        route: [[1.224, 103.782], [1.350, 103.500], [2.100, 102.200], [5.500, 97.500], [12.00, 60.00], [27.85, 34.28], [51.95, 4.10]]
+      },
+      {
+        mmsi: '636019550',
+        imo: '9744271',
+        name: 'TI EUROPE',
+        callSign: 'A8AA5',
+        flag: 'Liberia',
+        flagCode: 'LR',
+        type: 'Tanker',
+        classDesc: 'Ultra Large Crude Carrier (ULCC)',
+        dwt: 441585,
+        length: 380,
+        beam: 68,
+        draught: 24.5,
+        sog: 14.2,
+        cog: 112,
+        heading: 112,
+        lat: 26.5400,
+        lon: 56.4100,
+        destination: 'NINGBO (CN)',
+        eta: '2026-11-04 18:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '3,100,000 bbl Heavy Sour Arabian Crude',
+        corridor: 'hormuz',
+        route: [[26.54, 56.41], [25.80, 57.20], [24.00, 60.00], [12.00, 75.00], [5.80, 80.50], [1.22, 103.80], [29.85, 122.20]]
+      },
+      {
+        mmsi: '228389600',
+        imo: '9839272',
+        name: 'CMA CGM JACQUES SAADE',
+        callSign: 'FMCG',
+        flag: 'France',
+        flagCode: 'FR',
+        type: 'Container',
+        classDesc: 'Container (LNG Dual-Fuel 23,000 TEU)',
+        dwt: 220000,
+        length: 400,
+        beam: 61,
+        draught: 15.8,
+        sog: 16.5,
+        cog: 322,
+        heading: 322,
+        lat: 27.8500,
+        lon: 34.2800,
+        destination: 'LE HAVRE (FR)',
+        eta: '2026-10-29 12:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '22,500 TEU Industrial & Consumer Cargo',
+        corridor: 'suez',
+        route: [[27.85, 34.28], [29.95, 32.55], [31.30, 32.30], [35.00, 20.00], [36.00, -5.30], [49.50, 0.10]]
+      },
+      {
+        mmsi: '538007200',
+        imo: '9796000',
+        name: 'BERGE OLYMPUS',
+        callSign: 'V7AB8',
+        flag: 'Marshall Islands',
+        flagCode: 'MH',
+        type: 'Bulker',
+        classDesc: 'Capesize Bulk Carrier (WindWings Rotor)',
+        dwt: 211000,
+        length: 300,
+        beam: 50,
+        draught: 18.2,
+        sog: 13.1,
+        cog: 52,
+        heading: 52,
+        lat: -34.8000,
+        lon: 19.5000,
+        destination: 'QINGDAO (CN)',
+        eta: '2026-11-12 04:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '205,000 MT Brazilian High-Grade Iron Ore',
+        corridor: 'global',
+        route: [[-34.8, 19.5], [-32.0, 30.0], [-10.0, 60.0], [5.0, 90.0], [1.2, 103.8], [36.0, 120.3]]
+      },
+      {
+        mmsi: '311000850',
+        imo: '9654000',
+        name: 'ARCTIC VOYAGER',
+        callSign: 'C6ZW2',
+        flag: 'Bahamas',
+        flagCode: 'BS',
+        type: 'Gas',
+        classDesc: 'LNG Carrier (Moss Spherical 174k CBM)',
+        dwt: 85000,
+        length: 290,
+        beam: 46,
+        draught: 11.5,
+        sog: 18.4,
+        cog: 76,
+        heading: 76,
+        lat: 28.5000,
+        lon: -94.2000,
+        destination: 'ROTTERDAM (NL)',
+        eta: '2026-11-02 14:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '174,000 CBM Liquefied Natural Gas',
+        corridor: 'houston',
+        route: [[28.5, -94.2], [26.0, -88.0], [24.5, -80.0], [35.0, -50.0], [48.0, -10.0], [51.95, 4.10]]
+      },
+      {
+        mmsi: '211281000',
+        imo: '9800000',
+        name: 'PACIFIC EMERALD',
+        callSign: 'DHXZ',
+        flag: 'Germany',
+        flagCode: 'DE',
+        type: 'Tanker',
+        classDesc: 'Very Large Crude Carrier (VLCC 319k DWT)',
+        dwt: 319000,
+        length: 333,
+        beam: 60,
+        draught: 21.0,
+        sog: 13.9,
+        cog: 88,
+        heading: 88,
+        lat: 1.1800,
+        lon: 104.1200,
+        destination: 'YOSU (KR)',
+        eta: '2026-11-01 22:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '2,000,000 bbl Basrah Heavy Crude',
+        corridor: 'singapore',
+        route: [[1.18, 104.12], [2.5, 106.0], [8.0, 111.0], [18.0, 118.0], [34.75, 127.75]]
+      },
+      {
+        mmsi: '354001000',
+        imo: '9760000',
+        name: 'VALE BRASIL',
+        callSign: '3FYX',
+        flag: 'Panama',
+        flagCode: 'PA',
+        type: 'Bulker',
+        classDesc: 'Valemax Ultra Large Ore Carrier (VLOC 400k DWT)',
+        dwt: 400000,
+        length: 362,
+        beam: 65,
+        draught: 23.0,
+        sog: 12.4,
+        cog: 140,
+        heading: 140,
+        lat: -20.3500,
+        lon: -40.1500,
+        destination: 'SOHAR (OM)',
+        eta: '2026-11-18 10:00 UTC',
+        status: 'Underway Using Engine',
+        cargo: '390,000 MT Brazilian Carajas Iron Pellets',
+        corridor: 'global',
+        route: [[-20.35, -40.15], [-25.0, -35.0], [-34.8, 19.5], [-15.0, 55.0], [24.3, 56.6]]
+      },
+      {
+        mmsi: '235099000',
+        imo: '9780000',
+        name: 'SEAITERS HORIZON',
+        callSign: 'MBQC7',
+        flag: 'United Kingdom',
+        flagCode: 'GB',
+        type: 'Container',
+        classDesc: 'Commercial Flagship (ULCV 21,500 TEU)',
+        dwt: 215000,
+        length: 399,
+        beam: 58,
+        draught: 15.5,
+        sog: 18.5,
+        cog: 245,
+        heading: 245,
+        lat: 50.8500,
+        lon: 1.2500,
+        destination: 'SOUTHAMPTON (UK)',
+        eta: '2026-10-22 18:30 UTC',
+        status: 'Underway Using Engine',
+        cargo: '20,500 TEU Time-Critical Electronics & Retail',
+        corridor: 'dover',
+        route: [[50.85, 1.25], [50.5, 0.2], [50.7, -1.3]]
+      },
+      {
+        mmsi: '357002000',
+        imo: '9840000',
+        name: 'BW GEMINI',
+        callSign: '3FYY',
+        flag: 'Panama',
+        flagCode: 'PA',
+        type: 'Gas',
+        classDesc: 'Very Large Gas Carrier (LPG Dual-Fuel 84k CBM)',
+        dwt: 55000,
+        length: 226,
+        beam: 37,
+        draught: 11.2,
+        sog: 0.2,
+        cog: 340,
+        heading: 340,
+        lat: 8.8500,
+        lon: -79.5200,
+        destination: 'CHIBA (JP)',
+        eta: '2026-11-14 02:00 UTC',
+        status: 'At Anchor / Transit Queue',
+        cargo: '84,000 CBM Refrigerated Propane',
+        corridor: 'panama',
+        route: [[8.85, -79.52], [9.3, -79.9], [12.0, -95.0], [35.6, 140.1]]
+      },
+      {
+        mmsi: '244000100',
+        imo: '9890000',
+        name: 'ROTTERDAM PILOT 4',
+        callSign: 'PB44',
+        flag: 'Netherlands',
+        flagCode: 'NL',
+        type: 'Pilot',
+        classDesc: 'High-Speed Hydrodynamic Pilot Launch',
+        dwt: 120,
+        length: 22,
+        beam: 6.5,
+        draught: 1.8,
+        sog: 24.2,
+        cog: 295,
+        heading: 295,
+        lat: 51.9800,
+        lon: 3.9500,
+        destination: 'MAAS CENTER BUOY',
+        eta: '2026-10-22 11:15 UTC',
+        status: 'Underway Using Engine',
+        cargo: 'Deepsea Pilot Team Transfer',
+        corridor: 'dover',
+        route: [[51.98, 3.95], [52.02, 3.85]]
+      }
+    ];
+
+    const CHOKEPOINTS = {
+      global: { center: [18.0, 20.0], zoom: 2 },
+      singapore: { center: [1.24, 103.82], zoom: 11 },
+      suez: { center: [28.8, 33.5], zoom: 8 },
+      hormuz: { center: [26.4, 56.4], zoom: 9 },
+      panama: { center: [9.0, -79.6], zoom: 10 },
+      dover: { center: [50.9, 1.3], zoom: 10 },
+      gibraltar: { center: [35.95, -5.5], zoom: 10 },
+      houston: { center: [28.8, -94.4], zoom: 8 }
+    };
+
+    let aisMap = null;
+    let aisMarkers = {};
+    let aisPolylines = [];
+    let currentAisType = 'All';
+    let selectedAisVessel = null;
+
+    function getVesselColor(type) {
+      switch (type) {
+        case 'Tanker': return '#ef4444'; // Red
+        case 'Bulker': return '#10b981'; // Green
+        case 'Container': return '#2563eb'; // Blue
+        case 'Gas': return '#8b5cf6'; // Purple
+        case 'Pilot': return '#f59e0b'; // Amber
+        default: return '#0f172a';
+      }
+    }
+
+    function createShipIcon(vessel) {
+      const color = getVesselColor(vessel.type);
+      const angle = vessel.heading || vessel.cog || 0;
+      
+      const svg = `
+        <div class="ais-ship-icon" style="transform: rotate(${angle}deg); position: relative; width: 24px; height: 24px;">
+          <div class="ais-pulse-ring" style="border: 2px solid ${color};"></div>
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="${color}" stroke="#ffffff" stroke-width="1.5">
+            <path d="M12 2 L20 20 L12 16 L4 20 Z" />
+          </svg>
+        </div>
+      `;
+
+      return L.divIcon({
+        html: svg,
+        className: 'ais-marker-container',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -14]
+      });
+    }
+
+    function initAisTelemetry() {
+      if (typeof L === 'undefined') {
+        console.warn('Leaflet.js not loaded. AIS map unavailable.');
+        return;
+      }
+
+      const mapContainer = document.getElementById('ais-map');
+      if (!mapContainer || aisMap) return;
+
+      aisMap = L.map('ais-map', {
+        center: [18.0, 20.0],
+        zoom: 2,
+        minZoom: 2,
+        maxZoom: 17,
+        scrollWheelZoom: true
+      });
+
+      // CartoDB Positron clean map tiles
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &bull; &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(aisMap);
+
+      // Render shipping route tracks & ship markers
+      AIS_GLOBAL_FLEET.forEach(v => {
+        if (v.route && v.route.length > 1) {
+          const color = getVesselColor(v.type);
+          const line = L.polyline(v.route, {
+            color: color,
+            weight: 2,
+            opacity: 0.45,
+            dashArray: '4, 8'
+          }).addTo(aisMap);
+          aisPolylines.push(line);
+        }
+
+        const marker = L.marker([v.lat, v.lon], { icon: createShipIcon(v) }).addTo(aisMap);
+
+        const popupContent = `
+          <div style="font-family: inherit; font-size: 11px;">
+            <div style="font-weight: 800; font-size: 12px; color: #0f172a; margin-bottom: 2px;">${v.name}</div>
+            <div style="color: #64748b; font-size: 10px; margin-bottom: 6px;">${v.classDesc} &bull; Flag: ${v.flag}</div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 4px;">
+              <div><strong>Speed / Course:</strong> ${v.sog} kn / ${v.cog}&deg;</div>
+              <div><strong>Destination:</strong> ${v.destination}</div>
+              <div><strong>ETA:</strong> ${v.eta}</div>
+            </div>
+            <button onclick="selectAisVessel('${v.mmsi}')" style="margin-top: 6px; width: 100%; padding: 4px 8px; background: #0f172a; color: #ffffff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+              Open Full Transponder Dossier &rarr;
+            </button>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        marker.on('click', () => {
+          selectAisVessel(v.mmsi);
+        });
+
+        aisMarkers[v.mmsi] = marker;
+      });
+
+      // Default select flagship
+      selectAisVessel('235099000'); // SEAITERS HORIZON
+
+      // Realistic autonomous propulsion loop (smooth movement every 2.5s)
+      setInterval(() => {
+        AIS_GLOBAL_FLEET.forEach(v => {
+          if (v.status.includes('Anchor')) return;
+          const rad = (v.cog * Math.PI) / 180;
+          const distDelta = (v.sog * 0.00015);
+          v.lat += Math.cos(rad) * distDelta;
+          v.lon += Math.sin(rad) * distDelta;
+
+          const m = aisMarkers[v.mmsi];
+          if (m) {
+            m.setLatLng([v.lat, v.lon]);
+          }
+
+          if (selectedAisVessel && selectedAisVessel.mmsi === v.mmsi) {
+            updateDossierTelemetry(v);
+          }
+        });
+      }, 2500);
+    }
+
+    function panToChokepoint(cpKey) {
+      document.querySelectorAll('.ais-choke-btn').forEach(b => {
+        if (b.getAttribute('data-cp') === cpKey) {
+          b.className = "ais-choke-btn px-2.5 py-1.5 rounded-md bg-slate-900 text-white font-semibold";
+        } else {
+          b.className = "ais-choke-btn px-2.5 py-1.5 rounded-md bg-white text-slate-600 border border-slate-200 hover:bg-slate-50";
+        }
+      });
+
+      const cp = CHOKEPOINTS[cpKey] || CHOKEPOINTS.global;
+      if (aisMap) {
+        aisMap.flyTo(cp.center, cp.zoom, { duration: 1.8 });
+      }
+    }
+
+    function filterAisType(type) {
+      currentAisType = type;
+      document.querySelectorAll('.ais-type-btn').forEach(b => {
+        if (b.getAttribute('data-type') === type) {
+          b.className = "ais-type-btn px-2 py-1 rounded bg-slate-800 text-white font-medium";
+        } else {
+          b.className = "ais-type-btn px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200";
+        }
+      });
+
+      AIS_GLOBAL_FLEET.forEach(v => {
+        const marker = aisMarkers[v.mmsi];
+        if (!marker) return;
+        if (type === 'All' || v.type === type) {
+          marker.addTo(aisMap);
+        } else {
+          aisMap.removeLayer(marker);
+        }
+      });
+    }
+
+    function filterAisVessels() {
+      const q = (document.getElementById('ais-search-input').value || '').toLowerCase().trim();
+      let matchCount = 0;
+
+      AIS_GLOBAL_FLEET.forEach(v => {
+        const matches = v.name.toLowerCase().includes(q) || v.imo.includes(q) || v.mmsi.includes(q);
+        const marker = aisMarkers[v.mmsi];
+        if (!marker) return;
+
+        if (matches && (currentAisType === 'All' || v.type === currentAisType)) {
+          marker.addTo(aisMap);
+          matchCount++;
+        } else {
+          aisMap.removeLayer(marker);
+        }
+      });
+
+      if (q && matchCount === 1) {
+        const first = AIS_GLOBAL_FLEET.find(v => v.name.toLowerCase().includes(q) || v.imo.includes(q));
+        if (first) selectAisVessel(first.mmsi);
+      }
+    }
+
+    function selectAisVessel(mmsi) {
+      const v = AIS_GLOBAL_FLEET.find(item => item.mmsi === mmsi);
+      if (!v) return;
+      selectedAisVessel = v;
+
+      document.getElementById('dossier-status-badge').innerText = `MMSI: ${v.mmsi}`;
+      updateDossierTelemetry(v);
+
+      if (aisMap) {
+        aisMap.flyTo([v.lat, v.lon], Math.max(aisMap.getZoom(), 8), { duration: 1.2 });
+        const m = aisMarkers[v.mmsi];
+        if (m) m.openPopup();
+      }
+    }
+
+    function updateDossierTelemetry(v) {
+      const c = document.getElementById('dossier-content');
+      if (!c) return;
+
+      c.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div>
+            <div class="text-base font-serif font-bold text-slate-900">${v.name}</div>
+            <div class="text-[10px] text-slate-500 font-mono">IMO: ${v.imo} &bull; Call Sign: ${v.callSign}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${v.flag} (${v.flagCode})</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <div><span class="text-slate-400 block text-[10px]">SPEED OVER GROUND</span><strong class="text-slate-900">${v.sog.toFixed(1)} kn</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">COURSE OVER GROUND</span><strong class="text-slate-900">${v.cog.toFixed(0)}&deg; True</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">CURRENT DRAUGHT</span><strong class="text-slate-900">${v.draught}m</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">DEADWEIGHT (DWT)</span><strong class="text-slate-900">${v.dwt.toLocaleString()} MT</strong></div>
+        </div>
+
+        <div class="text-[11px] space-y-1 py-1">
+          <div class="flex justify-between"><span class="text-slate-400">Nav Status:</span><span class="text-emerald-700 font-semibold">${v.status}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Destination:</span><span class="font-bold text-slate-900">${v.destination}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Estimated ETA:</span><span class="text-slate-800">${v.eta}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Vessel Class:</span><span class="text-slate-700">${v.classDesc}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Cargo Stem:</span><span class="text-slate-900 font-medium">${v.cargo}</span></div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100">
+          <button onclick="bookVesselFixture('${v.name}', '${v.destination}')" class="w-full py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer">
+            <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+            <span>Request Commercial Fixture on this Tonnage</span>
+          </button>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function bookVesselFixture(vesselName, destination) {
+      switchFormTab('tonnage');
+      document.getElementById('t-vessel-name').value = vesselName;
+      document.getElementById('t-open-port').value = destination;
+      window.location.hash = 'inquiry';
+    }
+
+    // Initialize AIS when DOM loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAisTelemetry);
+    } else {
+      setTimeout(initAisTelemetry, 200);
+    }
+  </script>
+  </script>
+
+  <!-- ==================== THREE.JS 3D MINIATURE MARITIME ENGINE ==================== -->
+  <script>
+    (function init3DMaritimeFleet() {
+      if (typeof THREE === 'undefined') {
+        console.warn('Three.js failed to load from CDN. 3D models inactive.');
+        return;
+      }
+
+      const canvas = document.getElementById('maritime-3d-canvas');
+      if (!canvas) return;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf8fafc);
+      scene.fog = new THREE.FogExp2(0xf8fafc, 0.007);
+
+      const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const baseCamPos = new THREE.Vector3(45, 36, 52);
+      const targetCamPos = baseCamPos.clone();
+      const targetLookAt = new THREE.Vector3(0, 0, 0);
+      const currentLookAt = new THREE.Vector3(0, 0, 0);
+      camera.position.copy(baseCamPos);
+      camera.lookAt(targetLookAt);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance'
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      
+      // Adaptive Resolution & Battery Friendly Clamping
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, window.innerWidth < 768 ? 1.5 : 2);
+      renderer.setPixelRatio(pixelRatio);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.90);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xffffff, 1.25);
+      sunLight.position.set(50, 75, 40);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 10;
+      sunLight.shadow.camera.far = 180;
+      const d = 55;
+      sunLight.shadow.camera.left = -d;
+      sunLight.shadow.camera.right = d;
+      sunLight.shadow.camera.top = d;
+      sunLight.shadow.camera.bottom = -d;
+      sunLight.shadow.bias = -0.0004;
+      scene.add(sunLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.42);
+      scene.add(hemiLight);
+
+      // Materials Palette
+      const mats = {
+        hullNavy: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.35, metalness: 0.12 }),
+        hullCharcoal: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.1 }),
+        keelRed: new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.45, metalness: 0.05 }),
+        whiteGloss: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.28, metalness: 0.05 }),
+        deckSteel: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.55, metalness: 0.15 }),
+        deckTan: new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.1 }),
+        glass: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.85 }),
+        funnelBlue: new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }),
+        safetyOrange: new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.5 }),
+        lngSphere: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.24, metalness: 0.4 }),
+        lngPipe: new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.5 }),
+        hatchCovers: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }),
+        craneWhite: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 }),
+        buoyYellow: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 }),
+        buoyBlack: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 }),
+        water: new THREE.MeshStandardMaterial({
+          color: 0xf1f5f9,
+          roughness: 0.18,
+          metalness: 0.08,
+          transparent: true,
+          opacity: 0.72
+        })
+      };
+
+      // Ocean Plane & Bathymetric Grid
+      const waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(320, 320, 32, 32), mats.water);
+      waterMesh.rotation.x = -Math.PI / 2;
+      waterMesh.position.y = 0;
+      waterMesh.receiveShadow = true;
+      scene.add(waterMesh);
+
+      const grid = new THREE.GridHelper(260, 52, 0xcbd5e1, 0xe2e8f0);
+      grid.position.y = 0.02;
+      grid.material.transparent = true;
+      grid.material.opacity = 0.55;
+      scene.add(grid);
+
+      // Nautical Range Rings
+      const ringGroup = new THREE.Group();
+      const ringMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.32 });
+      [30, 60, 90].forEach(radius => {
+        const circleGeo = new THREE.BufferGeometry();
+        const pts = [];
+        for (let i = 0; i <= 64; i++) {
+          const theta = (i / 64) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(theta) * radius, 0.04, Math.sin(theta) * radius));
+        }
+        circleGeo.setFromPoints(pts);
+        ringGroup.add(new THREE.Line(circleGeo, ringMat));
+      });
+      scene.add(ringGroup);
+
+      // ================= HYDRODYNAMIC FOAM WAKE GENERATOR =================
+      function createVesselWake(width, length) {
+        const wakeCanvas = document.createElement('canvas');
+        wakeCanvas.width = 128;
+        wakeCanvas.height = 32;
+        const wCtx = wakeCanvas.getContext('2d');
+        const grad = wCtx.createLinearGradient(0, 0, 128, 0);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.50)');
+        grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.30)');
+        grad.addColorStop(0.70, 'rgba(255, 255, 255, 0.10)');
+        grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.00)');
+        wCtx.fillStyle = grad;
+        wCtx.fillRect(0, 0, 128, 32);
+
+        const tex = new THREE.CanvasTexture(wakeCanvas);
+        const geo = new THREE.PlaneGeometry(length, width, 16, 2);
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(-length / 2, 0, 0);
+
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          opacity: 0.70,
+          depthWrite: false
+        });
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 0.035;
+        return mesh;
+      }
+
+      // ================= MODEL 1: CONTAINER SHIP =================
+      function buildContainerShip() {
+        const ship = new THREE.Group();
+
+        // Hull
+        const hullGeo = new THREE.BoxGeometry(20, 2.4, 4.2);
+        const hull = new THREE.Mesh(hullGeo, mats.hullNavy);
+        hull.position.set(0, 1.2, 0);
+        hull.castShadow = true;
+        hull.receiveShadow = true;
+        ship.add(hull);
+
+        const keelGeo = new THREE.BoxGeometry(20.1, 0.75, 4.25);
+        const keel = new THREE.Mesh(keelGeo, mats.keelRed);
+        keel.position.set(0, 0.375, 0);
+        keel.castShadow = true;
+        ship.add(keel);
+
+        // Bow Wedge
+        const bowShape = new THREE.Shape();
+        bowShape.moveTo(0, -2.1);
+        bowShape.lineTo(4.2, 0);
+        bowShape.lineTo(0, 2.1);
+        bowShape.closePath();
+        const bowGeo = new THREE.ExtrudeGeometry(bowShape, { depth: 2.4, bevelEnabled: false });
+        bowGeo.rotateX(Math.PI / 2);
+        const bow = new THREE.Mesh(bowGeo, mats.hullNavy);
+        bow.position.set(10, 2.4, 0);
+        bow.castShadow = true;
+        ship.add(bow);
+
+        // Bow Windlass
+        const windlass = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 12), mats.deckSteel);
+        windlass.rotation.z = Math.PI / 2;
+        windlass.position.set(11.5, 2.6, 0.5);
+        ship.add(windlass);
+
+        // Multi-tier Container Stacks
+        const cColors = [0x1e3a8a, 0x0f766e, 0xc2410c, 0xd97706, 0xf1f5f9, 0xb91c1c, 0x0284c7];
+        const cGeo = new THREE.BoxGeometry(1.5, 0.6, 0.8);
+        for (let bx = -4.0; bx <= 6.0; bx += 1.7) {
+          for (let bz = -1.25; bz <= 1.25; bz += 0.85) {
+            const tiers = 2 + Math.floor(Math.sin(bx * 3 + bz * 5) * 1.5 + 1.2);
+            for (let ty = 0; ty < tiers; ty++) {
+              const col = cColors[Math.floor(Math.abs(Math.sin(bx * 7 + bz * 11 + ty * 3)) * cColors.length)];
+              const cMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.5 });
+              const cMesh = new THREE.Mesh(cGeo, cMat);
+              cMesh.position.set(bx, 2.4 + 0.3 + ty * 0.62, bz);
+              cMesh.castShadow = true;
+              cMesh.receiveShadow = true;
+              ship.add(cMesh);
+            }
+          }
+        }
+
+        // Bridge Block
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.2, 3.6), mats.whiteGloss);
+        bridge.position.set(-6.5, 4.0, 0);
+        bridge.castShadow = true;
+        ship.add(bridge);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.4, 3.8), mats.glass);
+        glass.position.set(-6.5, 5.0, 0);
+        ship.add(glass);
+
+        // Funnel
+        const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.5, 16), mats.whiteGloss);
+        funnel.position.set(-8.2, 4.2, 0);
+        funnel.rotation.z = -0.15;
+        funnel.castShadow = true;
+        ship.add(funnel);
+
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.45, 16), mats.funnelBlue);
+        band.position.set(-8.2, 4.4, 0);
+        band.rotation.z = -0.15;
+        ship.add(band);
+
+        // Radar Mast
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.6), mats.whiteGloss);
+        mast.position.set(-6.5, 6.2, 0);
+        ship.add(mast);
+
+        const radar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.3), mats.deckSteel);
+        radar.position.set(-6.5, 7.0, 0);
+        ship.add(radar);
+        ship.radar = radar;
+
+        // Lifeboats
+        const lb1 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.35, 0.45), mats.safetyOrange);
+        lb1.position.set(-6.5, 3.1, 2.0);
+        const lb2 = lb1.clone();
+        lb2.position.set(-6.5, 3.1, -2.0);
+        ship.add(lb1);
+        ship.add(lb2);
+
+        // Dynamic Foam Wake
+        const wake = createVesselWake(3.8, 14);
+        wake.position.set(-10, 0.02, 0);
+        ship.add(wake);
+        ship.wake = wake;
+
+        ship.scale.set(0.8, 0.8, 0.8);
+        return ship;
+      }
+
+      // ================= MODEL 2: CAPESIZE BULK CARRIER =================
+      function buildBulkCarrier() {
+        const ship = new THREE.Group();
+
+        // Hull
+        const hullGeo = new THREE.BoxGeometry(24, 2.5, 4.8);
+        const hull = new THREE.Mesh(hullGeo, mats.hullCharcoal);
+        hull.position.set(0, 1.25, 0);
+        hull.castShadow = true;
+        hull.receiveShadow = true;
+        ship.add(hull);
+
+        const keelGeo = new THREE.BoxGeometry(24.1, 0.8, 4.85);
+        const keel = new THREE.Mesh(keelGeo, mats.keelRed);
+        keel.position.set(0, 0.4, 0);
+        keel.castShadow = true;
+        ship.add(keel);
+
+        // Flared Bow
+        const bowShape = new THREE.Shape();
+        bowShape.moveTo(0, -2.4);
+        bowShape.lineTo(3.8, 0);
+        bowShape.lineTo(0, 2.4);
+        bowShape.closePath();
+        const bowGeo = new THREE.ExtrudeGeometry(bowShape, { depth: 2.5, bevelEnabled: false });
+        bowGeo.rotateX(Math.PI / 2);
+        const bow = new THREE.Mesh(bowGeo, mats.hullCharcoal);
+        bow.position.set(12, 2.5, 0);
+        bow.castShadow = true;
+        ship.add(bow);
+
+        // 6 Raised Cargo Hatch Covers
+        const hatchGeo = new THREE.BoxGeometry(1.8, 0.35, 3.6);
+        for (let hx = -4.5; hx <= 6.5; hx += 2.2) {
+          const hatch = new THREE.Mesh(hatchGeo, mats.hatchCovers);
+          hatch.position.set(hx, 2.65, 0);
+          hatch.castShadow = true;
+          hatch.receiveShadow = true;
+          ship.add(hatch);
+        }
+
+        // 4 Gantry Cranes
+        for (let cx = -3.4; cx <= 5.4; cx += 2.2) {
+          const craneBase = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.7, 12), mats.craneWhite);
+          craneBase.position.set(cx, 2.85, 0);
+          craneBase.castShadow = true;
+          ship.add(craneBase);
+
+          const cab = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.5), mats.craneWhite);
+          cab.position.set(cx, 3.3, 0);
+          ship.add(cab);
+
+          const jib = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0), mats.craneWhite);
+          jib.rotation.z = Math.PI / 3.5;
+          jib.position.set(cx + 0.8, 3.9, 0);
+          jib.castShadow = true;
+          ship.add(jib);
+        }
+
+        // Accommodation
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.6, 4.2), mats.whiteGloss);
+        bridge.position.set(-8.5, 4.2, 0);
+        bridge.castShadow = true;
+        ship.add(bridge);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.45, 4.4), mats.glass);
+        glass.position.set(-8.5, 5.2, 0);
+        ship.add(glass);
+
+        const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.8, 16), mats.hullCharcoal);
+        funnel.position.set(-10.5, 4.4, 0);
+        funnel.rotation.z = -0.12;
+        funnel.castShadow = true;
+        ship.add(funnel);
+
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.8), mats.whiteGloss);
+        mast.position.set(-8.5, 6.7, 0);
+        ship.add(mast);
+
+        const radar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.4), mats.deckSteel);
+        radar.position.set(-8.5, 7.5, 0);
+        ship.add(radar);
+        ship.radar = radar;
+
+        // Dynamic Foam Wake
+        const wake = createVesselWake(4.4, 16);
+        wake.position.set(-12, 0.02, 0);
+        ship.add(wake);
+        ship.wake = wake;
+
+        ship.scale.set(0.75, 0.75, 0.75);
+        return ship;
+      }
+
+      // ================= MODEL 3: LNG CARRIER =================
+      function buildLNGCarrier() {
+        const ship = new THREE.Group();
+
+        const hullGeo = new THREE.BoxGeometry(22, 2.6, 4.5);
+        const hull = new THREE.Mesh(hullGeo, mats.hullNavy);
+        hull.position.set(0, 1.3, 0);
+        hull.castShadow = true;
+        hull.receiveShadow = true;
+        ship.add(hull);
+
+        const keelGeo = new THREE.BoxGeometry(22.1, 0.8, 4.55);
+        const keel = new THREE.Mesh(keelGeo, mats.keelRed);
+        keel.position.set(0, 0.4, 0);
+        keel.castShadow = true;
+        ship.add(keel);
+
+        const bowShape = new THREE.Shape();
+        bowShape.moveTo(0, -2.25);
+        bowShape.lineTo(4.0, 0);
+        bowShape.lineTo(0, 2.25);
+        bowShape.closePath();
+        const bowGeo = new THREE.ExtrudeGeometry(bowShape, { depth: 2.6, bevelEnabled: false });
+        bowGeo.rotateX(Math.PI / 2);
+        const bow = new THREE.Mesh(bowGeo, mats.hullNavy);
+        bow.position.set(11, 2.6, 0);
+        bow.castShadow = true;
+        ship.add(bow);
+
+        // 4 Moss Spherical Tanks
+        const sphereGeo = new THREE.SphereGeometry(1.8, 24, 20);
+        const sphereRingGeo = new THREE.CylinderGeometry(1.82, 1.82, 0.2, 24);
+        [-4.8, -1.6, 1.6, 4.8].forEach(sx => {
+          const skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.85, 1.9, 0.5, 24), mats.deckSteel);
+          skirt.position.set(sx, 2.85, 0);
+          skirt.castShadow = true;
+          ship.add(skirt);
+
+          const sphere = new THREE.Mesh(sphereGeo, mats.lngSphere);
+          sphere.position.set(sx, 3.6, 0);
+          sphere.castShadow = true;
+          sphere.receiveShadow = true;
+          ship.add(sphere);
+
+          const ring = new THREE.Mesh(sphereRingGeo, mats.lngPipe);
+          ring.position.set(sx, 3.6, 0);
+          ship.add(ring);
+        });
+
+        // Pipeline Catwalk
+        const pipeGeo = new THREE.CylinderGeometry(0.08, 0.08, 12.5);
+        pipeGeo.rotateZ(Math.PI / 2);
+        const pipe = new THREE.Mesh(pipeGeo, mats.lngPipe);
+        pipe.position.set(0, 4.5, 0);
+        ship.add(pipe);
+
+        // Superstructure & Helipad
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.4, 3.8), mats.whiteGloss);
+        bridge.position.set(-8.0, 4.1, 0);
+        bridge.castShadow = true;
+        ship.add(bridge);
+
+        const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.6, 16), mats.whiteGloss);
+        funnel.position.set(-9.6, 4.3, 0);
+        funnel.rotation.z = -0.15;
+        funnel.castShadow = true;
+        ship.add(funnel);
+
+        const heliPad = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.15, 20), new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.5 }));
+        heliPad.position.set(-9.5, 2.7, 0);
+        ship.add(heliPad);
+
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.6), mats.whiteGloss);
+        mast.position.set(-8.0, 6.4, 0);
+        ship.add(mast);
+
+        const radar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.3), mats.deckSteel);
+        radar.position.set(-8.0, 7.2, 0);
+        ship.add(radar);
+        ship.radar = radar;
+
+        // Dynamic Foam Wake
+        const wake = createVesselWake(4.0, 15);
+        wake.position.set(-11, 0.02, 0);
+        ship.add(wake);
+        ship.wake = wake;
+
+        ship.scale.set(0.78, 0.78, 0.78);
+        return ship;
+      }
+
+      // ================= MODEL 4: ESCORT TUGBOAT =================
+      function buildTugboat() {
+        const tug = new THREE.Group();
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.6, 3.0), mats.hullNavy);
+        hull.position.set(0, 0.8, 0);
+        hull.castShadow = true;
+        tug.add(hull);
+
+        const bowFender = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.35, 10, 18, Math.PI), mats.hullCharcoal);
+        bowFender.rotation.x = Math.PI / 2;
+        bowFender.rotation.z = -Math.PI / 2;
+        bowFender.position.set(3.2, 0.8, 0);
+        tug.add(bowFender);
+
+        const wheelhouse = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 2.2), mats.whiteGloss);
+        wheelhouse.position.set(0.2, 2.3, 0);
+        wheelhouse.castShadow = true;
+        tug.add(wheelhouse);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.45, 2.25), mats.glass);
+        glass.position.set(0.2, 2.7, 0);
+        tug.add(glass);
+
+        // Small tug wake
+        const wake = createVesselWake(2.5, 7);
+        wake.position.set(-3.5, 0.02, 0);
+        tug.add(wake);
+        tug.wake = wake;
+
+        tug.scale.set(0.7, 0.7, 0.7);
+        return tug;
+      }
+
+      // ================= MODEL 5: CHANNEL BUOYS =================
+      function buildChannelBuoy(lightColor) {
+        const buoy = new THREE.Group();
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.4, 0.5, 16), mats.buoyYellow);
+        ring.position.set(0, 0.25, 0);
+        ring.castShadow = true;
+        buoy.add(ring);
+
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.8, 8), mats.buoyBlack);
+        cone.position.set(0, 1.4, 0);
+        cone.castShadow = true;
+        buoy.add(cone);
+
+        const beaconMat = new THREE.MeshStandardMaterial({ color: lightColor, emissive: lightColor, emissiveIntensity: 2.5 });
+        const lightSphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), beaconMat);
+        lightSphere.position.set(0, 2.4, 0);
+        buoy.add(lightSphere);
+
+        const pointLight = new THREE.PointLight(lightColor, 1.2, 12);
+        pointLight.position.set(0, 2.5, 0);
+        buoy.add(pointLight);
+        buoy.pointLight = pointLight;
+
+        return buoy;
+      }
+
+      // ================= MODEL 6: VLCC SUPERTANKER (319,000 DWT) =================
+      function buildVLCCSupertanker() {
+        const ship = new THREE.Group();
+
+        // Massive Deep-Draft Hull
+        const hullGeo = new THREE.BoxGeometry(28, 2.7, 5.2);
+        const hull = new THREE.Mesh(hullGeo, mats.hullCharcoal);
+        hull.position.set(0, 1.35, 0);
+        hull.castShadow = true;
+        hull.receiveShadow = true;
+        ship.add(hull);
+
+        const keelGeo = new THREE.BoxGeometry(28.1, 0.85, 5.25);
+        const keel = new THREE.Mesh(keelGeo, mats.keelRed);
+        keel.position.set(0, 0.425, 0);
+        keel.castShadow = true;
+        ship.add(keel);
+
+        // Bulbous Bow Wedge
+        const bowShape = new THREE.Shape();
+        bowShape.moveTo(0, -2.6);
+        bowShape.lineTo(4.4, 0);
+        bowShape.lineTo(0, 2.6);
+        bowShape.closePath();
+        const bowGeo = new THREE.ExtrudeGeometry(bowShape, { depth: 2.7, bevelEnabled: false });
+        bowGeo.rotateX(Math.PI / 2);
+        const bow = new THREE.Mesh(bowGeo, mats.hullCharcoal);
+        bow.position.set(14, 2.7, 0);
+        bow.castShadow = true;
+        ship.add(bow);
+
+        // Cargo Manifold Piping Lines running the length of the main deck
+        const pipeGeo = new THREE.CylinderGeometry(0.12, 0.12, 19.0, 12);
+        pipeGeo.rotateZ(Math.PI / 2);
+        [-0.8, 0, 0.8].forEach(pz => {
+          const mainPipe = new THREE.Mesh(pipeGeo, mats.lngPipe);
+          mainPipe.position.set(1.0, 2.9, pz);
+          ship.add(mainPipe);
+        });
+
+        // Midship Hose-Handling Gantry Cranes
+        [-0.5, 0.5].forEach(side => {
+          const cranePost = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.2, 12), mats.craneWhite);
+          cranePost.position.set(1.5, 3.8, side * 1.8);
+          cranePost.castShadow = true;
+          ship.add(cranePost);
+
+          const jib = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.15, 0.15), mats.craneWhite);
+          jib.position.set(1.5, 4.8, side * 1.8);
+          ship.add(jib);
+        });
+
+        // Accommodation Superstructure Aft with Bridge Wings
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.8, 4.6), mats.whiteGloss);
+        bridge.position.set(-10.5, 4.5, 0);
+        bridge.castShadow = true;
+        ship.add(bridge);
+
+        // Bridge Wings Extension
+        const wings = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 6.2), mats.whiteGloss);
+        wings.position.set(-10.5, 5.6, 0);
+        wings.castShadow = true;
+        ship.add(wings);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.45, 6.25), mats.glass);
+        glass.position.set(-10.5, 5.6, 0);
+        ship.add(glass);
+
+        // Twin Exhaust Funnels Aft
+        [-0.9, 0.9].forEach(fz => {
+          const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 1.8, 16), mats.hullCharcoal);
+          funnel.position.set(-12.5, 4.8, fz);
+          funnel.rotation.z = -0.15;
+          funnel.castShadow = true;
+          ship.add(funnel);
+
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.38, 0.3, 16), mats.glass);
+          cap.position.set(-12.5, 5.7, fz);
+          ship.add(cap);
+        });
+
+        // Aft Helipad Deck
+        const helipad = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.15, 24), new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.6 }));
+        helipad.position.set(-11.5, 2.8, 0);
+        ship.add(helipad);
+
+        // Radar Mast
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.8), mats.whiteGloss);
+        mast.position.set(-10.5, 7.0, 0);
+        ship.add(mast);
+
+        const radar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 1.5), mats.deckSteel);
+        radar.position.set(-10.5, 7.8, 0);
+        ship.add(radar);
+        ship.radar = radar;
+
+        // Broad Heavy Wake
+        const wake = createVesselWake(5.2, 18);
+        wake.position.set(-14.5, 0.02, 0);
+        ship.add(wake);
+        ship.wake = wake;
+
+        ship.scale.set(0.72, 0.72, 0.72);
+        return ship;
+      }
+
+      // ================= MODEL 7: FAST OFFSHORE PILOT VESSEL =================
+      function buildPilotBoat() {
+        const boat = new THREE.Group();
+
+        // Deep-V Wave-Piercing Hull
+        const hullGeo = new THREE.BoxGeometry(8.5, 1.6, 3.0);
+        const hull = new THREE.Mesh(hullGeo, mats.hullNavy);
+        hull.position.set(0, 0.8, 0);
+        hull.castShadow = true;
+        boat.add(hull);
+
+        const bowShape = new THREE.Shape();
+        bowShape.moveTo(0, -1.5);
+        bowShape.lineTo(2.2, 0);
+        bowShape.lineTo(0, 1.5);
+        bowShape.closePath();
+        const bowGeo = new THREE.ExtrudeGeometry(bowShape, { depth: 1.6, bevelEnabled: false });
+        bowGeo.rotateX(Math.PI / 2);
+        const bow = new THREE.Mesh(bowGeo, mats.hullNavy);
+        bow.position.set(4.25, 1.6, 0);
+        bow.castShadow = true;
+        boat.add(bow);
+
+        // Safety Orange Wheelhouse Cabin
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.8, 2.2), mats.safetyOrange);
+        cabin.position.set(-0.5, 2.1, 0);
+        cabin.castShadow = true;
+        boat.add(cabin);
+
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(3.65, 0.5, 2.25), mats.glass);
+        glass.position.set(-0.5, 2.5, 0);
+        boat.add(glass);
+
+        // Mast & Navigation Array
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.4), mats.whiteGloss);
+        mast.position.set(-0.5, 3.5, 0);
+        boat.add(mast);
+
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 2 }));
+        light.position.set(-0.5, 4.1, 0);
+        boat.add(light);
+
+        // High-Speed Twin Wake
+        const wake = createVesselWake(3.2, 10);
+        wake.position.set(-4.5, 0.02, 0);
+        boat.add(wake);
+        boat.wake = wake;
+
+        boat.scale.set(0.68, 0.68, 0.68);
+        return boat;
+      }
+
+      // ================= MODEL 8: COASTAL SHOAL LIGHTHOUSE BEACON =================
+      function buildOffshoreLighthouse() {
+        const lighthouse = new THREE.Group();
+
+        // Rocky Outcrop Base
+        const rockBase = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 5.8, 1.8, 10), mats.deckSteel);
+        rockBase.position.set(0, 0.9, 0);
+        rockBase.castShadow = true;
+        rockBase.receiveShadow = true;
+        lighthouse.add(rockBase);
+
+        // Tapered Cylindrical Tower with Alternating Red & White Stripes
+        const towerGroup = new THREE.Group();
+        const colors = [0x991b1b, 0xffffff, 0x991b1b, 0xffffff, 0x991b1b];
+        for (let i = 0; i < 5; i++) {
+          const r1 = 1.6 - (i * 0.12);
+          const r2 = 1.72 - (i * 0.12);
+          const segGeo = new THREE.CylinderGeometry(r1, r2, 1.6, 20);
+          const segMat = new THREE.MeshStandardMaterial({ color: colors[i], roughness: 0.4 });
+          const seg = new THREE.Mesh(segGeo, segMat);
+          seg.position.set(0, 1.8 + (i * 1.6) + 0.8, 0);
+          seg.castShadow = true;
+          towerGroup.add(seg);
+        }
+        lighthouse.add(towerGroup);
+
+        // Gallery Observation Balcony
+        const balcony = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.25, 20), mats.hullCharcoal);
+        balcony.position.set(0, 10.0, 0);
+        balcony.castShadow = true;
+        lighthouse.add(balcony);
+
+        // Glass Lantern Room
+        const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.1, 16), mats.glass);
+        lantern.position.set(0, 10.6, 0);
+        lighthouse.add(lantern);
+
+        // Cupola Roof Dome
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.92, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), mats.hullCharcoal);
+        dome.position.set(0, 11.15, 0);
+        lighthouse.add(dome);
+
+        // High-Intensity Fresnel Beacon & 360-degree Sweeping Light Beam
+        const beaconLight = new THREE.PointLight(0xfef08a, 2.5, 35);
+        beaconLight.position.set(0, 10.6, 0);
+        lighthouse.add(beaconLight);
+
+        // Rotating Sweeping Volumetric Beam
+        const beamArm = new THREE.Group();
+        beamArm.position.set(0, 10.6, 0);
+
+        const spot = new THREE.SpotLight(0xfef08a, 4.0, 75, Math.PI / 7, 0.4, 1.2);
+        spot.position.set(0, 0, 0);
+        spot.target.position.set(40, -8, 0);
+        beamArm.add(spot);
+        beamArm.add(spot.target);
+
+        lighthouse.add(beamArm);
+        lighthouse.beamArm = beamArm;
+
+        lighthouse.scale.set(0.85, 0.85, 0.85);
+        return lighthouse;
+      }
+
+      // Instantiate Full 8-Asset Miniature Fleet
+      const containerShip = buildContainerShip();
+      scene.add(containerShip);
+
+      const bulkCarrier = buildBulkCarrier();
+      scene.add(bulkCarrier);
+
+      const lngCarrier = buildLNGCarrier();
+      scene.add(lngCarrier);
+
+      const vlccSupertanker = buildVLCCSupertanker();
+      scene.add(vlccSupertanker);
+
+      const pilotBoat = buildPilotBoat();
+      scene.add(pilotBoat);
+
+      const tugboat = buildTugboat();
+      scene.add(tugboat);
+
+      const lighthouse = buildOffshoreLighthouse();
+      lighthouse.position.set(-28, 0, 24);
+      scene.add(lighthouse);
+
+      const buoy1 = buildChannelBuoy(0x22c55e);
+      buoy1.position.set(12, 0, 16);
+      scene.add(buoy1);
+
+      const buoy2 = buildChannelBuoy(0xfacc15);
+      buoy2.position.set(-18, 0, -14);
+      scene.add(buoy2);
+
+      // Camera State & 3D Interactive Inspection Engine
+      let mouseX = 0, mouseY = 0;
+      let scrollRatio = 0;
+      let isVisible = true;
+      let activeFocusKey = 'overview';
+
+      const FLEET_REGISTRY = {
+        overview: { obj: null, offset: new THREE.Vector3(45, 36, 52), lookOffset: new THREE.Vector3(0, 0, 0), name: "Ocean Overview Patrol", status: "Swell & Heave Active" },
+        container: { obj: containerShip, offset: new THREE.Vector3(14, 10, 18), lookOffset: new THREE.Vector3(0, 2, 0), name: "ULCV Flagship (20,000 TEU)", status: "Speed: 17.8 kn • Laden Draft: 16.2m" },
+        bulker: { obj: bulkCarrier, offset: new THREE.Vector3(-16, 11, 16), lookOffset: new THREE.Vector3(0, 2, 0), name: "Capesize Bulk Carrier (208,000 DWT)", status: "Speed: 13.5 kn • 4 Gantry Cranes Active" },
+        lng: { obj: lngCarrier, offset: new THREE.Vector3(12, 9, -16), lookOffset: new THREE.Vector3(0, 2.5, 0), name: "Moss LNG Carrier (174,000 CBM)", status: "Speed: 18.2 kn • Spherical Tanks Nominal" },
+        vlcc: { obj: vlccSupertanker, offset: new THREE.Vector3(-18, 12, -18), lookOffset: new THREE.Vector3(0, 2, 0), name: "VLCC Supertanker (319,000 DWT)", status: "Speed: 14.1 kn • Piping Network Monitored" },
+        pilot: { obj: pilotBoat, offset: new THREE.Vector3(8, 6, 10), lookOffset: new THREE.Vector3(0, 1, 0), name: "High-Speed Offshore Pilot Launch", status: "Speed: 24.2 kn • Deepsea Pilot Escort" },
+        tug: { obj: tugboat, offset: new THREE.Vector3(10, 7, 8), lookOffset: new THREE.Vector3(0, 1, 0), name: "Harbor Escort Tugboat (80T BP)", status: "Position: Escort Formation Stbd Flank" },
+        lighthouse: { obj: lighthouse, offset: new THREE.Vector3(16, 12, 16), lookOffset: new THREE.Vector3(0, 8, 0), name: "Shoal Lighthouse & Beacon", status: "Optics: 360° Sweeping Fresnel Beam" }
+      };
+
+      // Expose globally for interactive HUD buttons
+      window.focus3DShip = function(key) {
+        activeFocusKey = key;
+        const entry = FLEET_REGISTRY[key] || FLEET_REGISTRY.overview;
+
+        document.querySelectorAll('.ship-focus-btn').forEach(btn => {
+          if (btn.getAttribute('data-ship') === key) {
+            btn.className = "ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-900 text-white text-left font-semibold truncate cursor-pointer";
+          } else {
+            btn.className = "ship-focus-btn px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-left font-semibold truncate cursor-pointer";
+          }
+        });
+
+        const nameEl = document.getElementById('inspect-name');
+        const statEl = document.getElementById('inspect-status');
+        if (nameEl) nameEl.innerText = entry.name;
+        if (statEl) statEl.innerText = entry.status;
+      };
+
+      // Tab Visibility / Battery Optimization
+      document.addEventListener('visibilitychange', () => {
+        isVisible = !document.hidden;
+      });
+
+      // Mouse Parallax (Gentle physical scale model depth)
+      window.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+        mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+      });
+
+      // Page Scroll Tracking
+      window.addEventListener('scroll', () => {
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        scrollRatio = window.scrollY / maxScroll;
+      });
+
+      // Window Resize with dynamic DPR clamping
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 768 ? 1.5 : 2));
+      });
+
+      // Animation Loop (Autonomous background motion)
+      let clock = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Battery / Tab optimization
+        if (!isVisible) return;
+
+        clock += 0.016;
+
+        // 1. Container Ship Cruising Lane
+        const t1 = clock * 0.18;
+        containerShip.position.x = 22 + Math.sin(t1) * 28;
+        containerShip.position.z = -8 + Math.cos(t1 * 0.7) * 12;
+        containerShip.rotation.y = -Math.PI / 2 + Math.cos(t1) * 0.25;
+
+        // Hydrodynamic Micro-Bobbing & Swell
+        containerShip.position.y = Math.sin(clock * 1.6) * 0.08;
+        containerShip.rotation.z = Math.cos(clock * 1.2) * 0.025; // roll
+        containerShip.rotation.x = Math.sin(clock * 1.5) * 0.015; // pitch
+        if (containerShip.radar) containerShip.radar.rotation.y += 0.04;
+        if (containerShip.wake) {
+          containerShip.wake.scale.x = 1.0 + Math.sin(clock * 3.0) * 0.08;
+          containerShip.wake.scale.z = 1.0 + Math.cos(clock * 2.5) * 0.06;
+        }
+
+        // 2. Capesize Bulk Carrier Cruising Lane
+        const t2 = clock * 0.14 + 2.5;
+        bulkCarrier.position.x = -15 + Math.cos(t2) * 26;
+        bulkCarrier.position.z = 18 + Math.sin(t2 * 0.6) * 10;
+        bulkCarrier.rotation.y = Math.PI / 2 - Math.sin(t2) * 0.22;
+        bulkCarrier.position.y = Math.sin(clock * 1.4 + 1.0) * 0.07;
+        bulkCarrier.rotation.z = Math.cos(clock * 1.1 + 0.5) * 0.02;
+        if (bulkCarrier.radar) bulkCarrier.radar.rotation.y += 0.045;
+        if (bulkCarrier.wake) {
+          bulkCarrier.wake.scale.x = 1.0 + Math.sin(clock * 2.8 + 1.0) * 0.07;
+          bulkCarrier.wake.scale.z = 1.0 + Math.cos(clock * 2.2) * 0.05;
+        }
+
+        // 3. LNG Carrier Channel Patrol
+        const t3 = clock * 0.12 + 4.2;
+        lngCarrier.position.x = -8 + Math.sin(t3) * 25;
+        lngCarrier.position.z = -22 + Math.cos(t3 * 0.5) * 14;
+        lngCarrier.rotation.y = -Math.PI / 2.2 + Math.cos(t3) * 0.2;
+        lngCarrier.position.y = Math.sin(clock * 1.5 + 2.0) * 0.07;
+        if (lngCarrier.radar) lngCarrier.radar.rotation.y += 0.038;
+        if (lngCarrier.wake) {
+          lngCarrier.wake.scale.x = 1.0 + Math.sin(clock * 2.5 + 2.0) * 0.08;
+        }
+
+        // 4. Tugboat Escort Formation
+        tugboat.position.x = containerShip.position.x + Math.sin(clock * 0.4) * 5 + 6;
+        tugboat.position.z = containerShip.position.z + Math.cos(clock * 0.4) * 4 + 4;
+        tugboat.rotation.y = containerShip.rotation.y + 0.2;
+        tugboat.position.y = Math.sin(clock * 2.2) * 0.09;
+        if (tugboat.wake) {
+          tugboat.wake.scale.x = 1.0 + Math.sin(clock * 4.0) * 0.12;
+        }
+
+        // 5. VLCC Supertanker Cruising Arc
+        const t4 = clock * 0.10 + 1.2;
+        vlccSupertanker.position.x = 8 + Math.cos(t4) * 32;
+        vlccSupertanker.position.z = -32 + Math.sin(t4 * 0.8) * 12;
+        vlccSupertanker.rotation.y = Math.PI / 2.1 - Math.sin(t4) * 0.2;
+        vlccSupertanker.position.y = Math.sin(clock * 1.3) * 0.06;
+        vlccSupertanker.rotation.z = Math.cos(clock * 0.9) * 0.016;
+        if (vlccSupertanker.radar) vlccSupertanker.radar.rotation.y += 0.04;
+        if (vlccSupertanker.wake) {
+          vlccSupertanker.wake.scale.x = 1.0 + Math.sin(clock * 2.6) * 0.07;
+        }
+
+        // 6. Fast Offshore Pilot Interceptor
+        pilotBoat.position.x = containerShip.position.x - 7 + Math.sin(clock * 0.8) * 2;
+        pilotBoat.position.z = containerShip.position.z + 5 + Math.cos(clock * 0.8) * 2;
+        pilotBoat.rotation.y = containerShip.rotation.y - 0.12;
+        pilotBoat.position.y = Math.sin(clock * 3.4) * 0.11;
+        if (pilotBoat.wake) {
+          pilotBoat.wake.scale.x = 1.0 + Math.sin(clock * 5.0) * 0.15;
+        }
+
+        // 7. Coastal Lighthouse 360-Degree Sweeping Beam
+        if (lighthouse.beamArm) {
+          lighthouse.beamArm.rotation.y += 0.022;
+        }
+
+        // 8. Buoys Bobbing & Beacon Cadence
+        buoy1.position.y = Math.sin(clock * 2.0) * 0.06;
+        buoy2.position.y = Math.sin(clock * 1.9 + 1.5) * 0.06;
+        const pulse1 = (Math.sin(clock * 4.0) > 0.3) ? 1.5 : 0.2;
+        const pulse2 = (Math.sin(clock * 4.0 + 2.0) > 0.3) ? 1.5 : 0.2;
+        if (buoy1.pointLight) buoy1.pointLight.intensity = pulse1;
+        if (buoy2.pointLight) buoy2.pointLight.intensity = pulse2;
+
+        // Camera Positioning: Inspector Focus vs Overview Parallax
+        if (activeFocusKey !== 'overview' && FLEET_REGISTRY[activeFocusKey]) {
+          const reg = FLEET_REGISTRY[activeFocusKey];
+          if (reg.obj) {
+            targetCamPos.x = reg.obj.position.x + reg.offset.x;
+            targetCamPos.y = reg.obj.position.y + reg.offset.y;
+            targetCamPos.z = reg.obj.position.z + reg.offset.z;
+            targetLookAt.copy(reg.obj.position).add(reg.lookOffset);
+          }
+        } else {
+          targetCamPos.x = baseCamPos.x + (mouseX * 3.5) - (scrollRatio * 10);
+          targetCamPos.y = baseCamPos.y + (-mouseY * 2.0) + (scrollRatio * 6);
+          targetCamPos.z = baseCamPos.z + (scrollRatio * 12);
+          targetLookAt.set(0 - (scrollRatio * 8), 0, 0);
+        }
+
+        camera.position.lerp(targetCamPos, 0.045);
+        currentLookAt.lerp(targetLookAt, 0.045);
+        camera.lookAt(currentLookAt);
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    })();
+  </script>
+
+</body>
+</html>
